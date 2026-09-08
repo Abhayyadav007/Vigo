@@ -28,8 +28,8 @@ multi-currency support. This constrains every decision below:
 | 1 | Authentication — phone + OTP, self-owned | ✅ Locked | 2026-09-08 |
 | 2 | Payment gateway — Razorpay | ✅ Locked | 2026-09-08 |
 | 3 | Mobile tooling — Expo with dev builds | ✅ Locked | 2026-09-08 |
-| 4 | One app with role switch vs two apps | ⬜ Open | — |
-| 5 | Hosting / deployment target | ⬜ Open | — |
+| 4 | Mobile apps — two separate apps | ✅ Locked | 2026-09-08 |
+| 5 | Hosting — DigitalOcean, Bangalore (BLR1) | ✅ Locked | 2026-09-08 |
 
 ---
 
@@ -230,16 +230,142 @@ leave Expo, painful to adopt it later — is the core argument for starting here
       we are clear.
 - [ ] Add `android/` and `ios/` to `.gitignore` from the first commit.
 
-## 4. One app with role switch vs two apps
+## 4. Mobile apps — two separate apps
 
-**Status:** ⬜ Open
+**Status:** ✅ Locked — 2026-09-08
 
-Leaning two apps (customer + rider) sharing a `packages/api-client`, since the
-flows diverge completely.
+### Decision
 
-## 5. Hosting / deployment target
+**Two separate Expo apps** — customer and rider — in one monorepo, sharing code
+through local packages. Not one app with a role switch.
 
-**Status:** ⬜ Open
+```
+frontend/
+├── apps/
+│   ├── customer/        # Expo app - browse, cart, checkout, track
+│   └── rider/           # Expo app - go online, accept, pick, deliver
+└── packages/
+    ├── api-client/      # typed API client, auth interceptor, refresh logic
+    ├── types/           # shared request/response types
+    └── ui/              # shared primitives only - most UI is NOT shared
+```
 
-Leaning Fly.io + Neon for lowest friction. Shapes the Dockerfile and CI, so
-decide before writing the deploy workflow.
+### Why
+
+1. **Store review isolation.** With one app, a rejected rider feature blocks the
+   customer release too. Separate listings mean separate review queues and
+   independent release cadence.
+2. **Background location permission.** The rider app needs continuous background
+   location. Both Apple and Google scrutinise that permission heavily and demand
+   justification. A **customer** app requesting background location invites
+   rejection and user distrust. Two apps keeps that permission scoped to the app
+   that genuinely needs it — this is the strongest single reason.
+3. **The flows share almost nothing.** Catalog, cart, and checkout have no
+   counterpart in the rider app; assignment, navigation, and delivery confirmation
+   have none in the customer app. The real shared surface is the API client and
+   auth — which is exactly what `packages/` covers.
+4. **Bundle size and code leakage.** One app ships rider logic (and its internal
+   assignment/ops semantics) to every customer install.
+
+### Consequences
+
+- Monorepo tooling: **pnpm workspaces** plus Expo's monorepo configuration
+  (`metro.config.js` needs `watchFolders` and node_modules resolution set up).
+- **Two app store listings, two EAS projects, two release pipelines.** More CI
+  surface, but each is simpler than a combined one.
+- Requires discipline about what belongs in `packages/` — resist sharing screens
+  or navigation. Share the API client, types, and low-level primitives only.
+- Rider app can lag behind: manual dispatch is viable at one dark store, so the
+  rider app is deliberately scheduled after the customer flow works end to end.
+
+### Action items
+
+- [ ] Set up pnpm workspaces + Expo monorepo config before building the second app,
+      not after.
+- [ ] Build `packages/api-client` first, consumed by the customer app — the rider
+      app inherits it for free.
+- [ ] Keep two separate EAS project IDs and two bundle identifiers from the start
+      (e.g. `in.vigo.customer`, `in.vigo.rider`) — renaming later means new store
+      listings.
+
+## 5. Hosting — DigitalOcean, Bangalore (BLR1)
+
+**Status:** ✅ Locked — 2026-09-08
+
+### Decision
+
+**DigitalOcean, Bangalore (BLR1) region** for all backend infrastructure:
+App Platform for the Rust service and worker, Managed PostgreSQL for the
+database, Spaces (+ built-in CDN) for product images.
+
+### Why
+
+1. **~40% cheaper than Fly.io** for an equivalent setup. Cost discipline matters
+   pre-revenue with thin q-commerce unit economics.
+2. **One vendor for all four pieces** — compute, Postgres, object storage, CDN.
+   Less to wire together when building solo.
+3. **Flat, predictable monthly pricing** — no usage-based surprises, unlike Neon's
+   CU-hours or Fly's metered egress.
+4. **Bangalore is an India region**, which is the requirement. Mumbai vs Bangalore
+   is ~15 ms domestically — invisible. What mattered was not being overseas.
+
+### Rejected alternatives
+
+- **Neon — ruled out: no India region.** Its Asia presence is Singapore. (An
+  earlier draft of this file suggested Fly.io + Neon; that predates the India-only
+  scope decision.)
+- **Fly.io (Mumbai `bom`)** — nicer DX, but Managed Postgres starts at $38/mo
+  (~3x DO's entry tier), India egress is $0.12/GB (their highest rate globally),
+  and the free tier is gone.
+- **AWS ap-south-1** — most capable, most complexity. Choose only if we already
+  know AWS well.
+- **Railway / Render / Hetzner — no India region.** Hetzner is exceptional value
+  and completely wrong here: ~250 ms of ocean per request kills the feel of a
+  10-minute-delivery app.
+
+### Costs
+
+Building blocks (before GST):
+
+| Service | Price/mo | Spec |
+|---------|----------|------|
+| Droplet (Basic) | $6 / $12 / $18 | 1 GB / 2 GB / 2 GB-2vCPU |
+| App Platform | $5 per service | dynamic services; static free |
+| Managed Postgres | $15.15 / $30.45 / $60.90 | 1 / 2 / 4 GiB RAM |
+| Spaces + CDN | $5 | 250 GiB storage + 1 TiB transfer |
+
+Projected totals:
+
+| Stage | Monthly | INR approx |
+|-------|---------|------------|
+| Development / beta | ~$25 | ~Rs 2,200 |
+| Beta launch (customer app + worker) | ~$37 | ~Rs 3,300 |
+| ~1,000 orders/day (HA, Redis) | ~$195 | ~Rs 17,000 |
+
+**Perspective:** at 1,000 orders/day infrastructure is ~Rs 0.57/order, while the
+Razorpay fee at standard rates is ~Rs 9/order. **The payment gateway costs ~15x
+what the servers do** — optimise the UPI rate (Decision 2), not the hosting bill.
+
+Add ~18% GST as an Indian customer; likely claimable as input tax credit if
+GST-registered.
+
+### Consequences
+
+- Deploy target shapes the Dockerfile, the GitHub Actions deploy workflow, and
+  secrets management. Settle these before writing `backend-deploy.yml`.
+- Managed Postgres gives automated backups and point-in-time recovery — the reason
+  we are not self-hosting Postgres for order and payment data.
+- **PostGIS is supported** on DO Managed Postgres — verified as a selection
+  criterion, since serviceability depends on it.
+- Serve product images from Spaces' CDN, never through the app — true regardless
+  of provider.
+
+### Action items
+
+- [ ] Create the DigitalOcean account and claim the **$200 / 60-day free credit**.
+      This covers the entire build phase through the thin-slice demo.
+- [ ] Provision in **BLR1** — do not accept a default US region.
+- [ ] Enable the **PostGIS** extension on the managed database at provisioning.
+- [ ] Optional cost saver during development only: run backend + worker + Postgres
+      on a single $12 droplet via docker-compose. **Move Postgres to managed before
+      taking a single real order.**
