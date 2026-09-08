@@ -27,7 +27,7 @@ multi-currency support. This constrains every decision below:
 |---|----------|--------|------|
 | 1 | Authentication — phone + OTP, self-owned | ✅ Locked | 2026-09-08 |
 | 2 | Payment gateway — Razorpay | ✅ Locked | 2026-09-08 |
-| 3 | Expo (dev builds) vs bare React Native | ⬜ Open | — |
+| 3 | Mobile tooling — Expo with dev builds | ✅ Locked | 2026-09-08 |
 | 4 | One app with role switch vs two apps | ⬜ Open | — |
 | 5 | Hosting / deployment target | ⬜ Open | — |
 
@@ -167,12 +167,68 @@ a negotiation to be won before scaling, not a fixed cost.
       rate. Cite a projected 75%+ UPI share; use Cashfree's advertised
       "UPI from 0%" as leverage.
 
-## 3. Expo (dev builds) vs bare React Native
+## 3. Mobile tooling — Expo with dev builds
 
-**Status:** ⬜ Open
+**Status:** ✅ Locked — 2026-09-08
 
-Leaning Expo with dev builds unless a required native module rules it out.
-Ejecting later is possible.
+### Decision
+
+**Expo with dev builds** (`expo prebuild` + a custom dev client), not bare React
+Native and not Expo Go.
+
+Note this is **not** the old "managed vs ejected" tradeoff. Dev builds support
+**any** native module. The choice is Expo's tooling around RN vs raw RN.
+
+### Why
+
+1. **`expo-updates` gives OTA updates out of the box.** Shipping a pricing or
+   checkout fix in hours instead of waiting on a 1-7 day store review is close to
+   essential for q-commerce. In bare RN this is now awkward since CodePush retired.
+   **This reason alone decides it.**
+2. **RN version upgrades stop being a lost week.** Building solo, we cannot afford
+   days a year on native upgrade diffs.
+3. **Config plugins keep native config in version control as code** instead of
+   hand-edited `Info.plist` / `AndroidManifest.xml` / Gradle that drifts.
+
+### Consequences
+
+- `android/` and `ios/` are **gitignored and regenerated** by prebuild. Never
+  hand-edit them — write a config plugin instead, or the change is lost on the next
+  prebuild.
+- EAS Build free tier is limited. Local builds (`npx expo run:android` /
+  `run:ios`) are free and we are on a Mac, so iOS builds work locally.
+- One more abstraction layer when debugging native issues.
+
+### Escape hatch
+
+Run `expo prebuild`, commit `android/` and `ios/`, and we are effectively bare
+while keeping Expo's modules. **We are never trapped.** This asymmetry — easy to
+leave Expo, painful to adopt it later — is the core argument for starting here.
+
+### SDK compatibility notes
+
+- **Truecaller: solved.** `@dhana-cs/react-native-truecaller` ships a built-in Expo
+  config plugin that configures `AndroidManifest.xml` from `app.json`. It
+  implements exactly the flow in Decision 1 — Truecaller if installed, OTP
+  fallback if not. Requires a dev build (not Expo Go) and does not work on
+  emulators.
+- **Razorpay: one open issue, but it is not an Expo problem.**
+  `react-native-razorpay` does not yet support the **New Architecture**
+  (razorpay/react-native-razorpay#510). New Arch has been the default in **bare RN
+  since 0.76** as well, so this breaks identically either way — it is a
+  "Razorpay's SDK is behind" problem, not an Expo-vs-bare differentiator.
+  Mitigations (same in both worlds): rely on the New Arch interop layer, pin
+  `newArchEnabled: false`, or fall back to Razorpay's WebView checkout.
+- Ignore Razorpay's docs claiming "Expo doesn't support native code" — stale text
+  from the Expo Go era.
+
+### Action items
+
+- [ ] **Spike before writing app code (~30 min):** scaffold a throwaway Expo app,
+      `npx expo install react-native-razorpay @dhana-cs/react-native-truecaller`,
+      `npx expo prebuild`, `npx expo run:android`. If Razorpay checkout opens,
+      we are clear.
+- [ ] Add `android/` and `ios/` to `.gitignore` from the first commit.
 
 ## 4. One app with role switch vs two apps
 
