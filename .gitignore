@@ -1,0 +1,20 @@
+# Secrets
+.env
+.env.local
+
+# Rust
+/backend/target/
+**/*.rs.bk
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+*.log
+
+# Expo prebuild output — regenerated, never hand-edited (Decision 3)
+/frontend/apps/*/android/
+/frontend/apps/*/ios/
+
+# macOS
+.DS_Store

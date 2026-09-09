@@ -23,12 +23,83 @@ multi-currency support. This constrains every decision below:
 
 ---
 
+## Business model — multi-vendor marketplace
+
+**vigo is a marketplace of local shops, not a dark-store operation.** We do not own
+inventory. Shop owners list their own items; customers browse open shops nearby and
+order; our own riders deliver.
+
+| Aspect | Model |
+|--------|-------|
+| Inventory | **Owned by shop owners.** They set price and stock. |
+| Delivery | **Our own rider fleet.** We recruit, assign, and pay riders. |
+| Cart scope | **One shop per order.** No mixed-shop carts. |
+| Money | **We collect from the customer**, settle to shops on a cycle minus commission. |
+
+Three sides to serve: **customers, shop owners, riders** — plus internal ops.
+
+### Delivery promise — 10-20 minutes
+
+The product is **Zomato's marketplace mechanics with Blinkit's speed promise**:
+order from third-party shops, delivered in 10-20 minutes.
+
+Time budget:
+
+| Step | Budget |
+|------|--------|
+| Shop notices + accepts | 1-2 min (biggest risk) |
+| Shop picks + packs | 3-5 min |
+| Rider reaches shop | 2-4 min (**must overlap with picking**) |
+| Travel to customer | 5-8 min (only within ~2-3 km) |
+| Handover | ~1 min |
+| **Total** | **12-20 min, only if steps overlap** |
+
+**Why this is harder than Blinkit:** Blinkit owns the dark store — exact inventory,
+aisles laid out for picking, trained pickers, riders parked outside. A kirana owner
+serving walk-in customers has none of that, and may not look at their phone for
+three minutes, burning 20% of the budget. **Shop responsiveness is our core
+operational problem**, the way rider supply is Zomato's.
+
+### What the promise forces into the design
+
+1. **Tight radius: 2-3 km per shop**, not city-wide. Zomato serves 7 km because it
+   promises 35 minutes. At 15 minutes geography is unforgiving. The `ST_DWithin`
+   radius is a **product decision**, not a config value.
+2. **Assign the rider in parallel with shop acceptance, never after.** Dispatch on
+   successful payment so the rider travels while the shop picks. Serialising
+   (accept -> find rider -> travel) blows the budget.
+3. **Hard shop-acceptance timeout: 60-90 seconds**, then auto-reroute to another
+   shop or auto-cancel with refund. Unbounded, one distracted owner produces a
+   40-minute order.
+4. **Shop SLA scoring is first-class.** Track acceptance rate and *actual* prep time
+   per shop; rank shops in customer search by measured speed, not just distance.
+   This is the lever that makes the model work — fast shops earn more orders, slow
+   shops self-select out.
+
+Schema implications: `shops` carries `avg_prep_seconds`, `acceptance_rate`,
+`is_accepting_orders`, and `delivery_radius_m`. The order state machine needs
+`pending_shop_acceptance` with a timeout, and assignment runs concurrently with it.
+
+### Consequences
+
+- **Catalog quality is the hardest problem.** Fifty shops each typing their own item
+  names produces "Amul Milk 500ml" nine different ways. Browse and search quality
+  depend on solving this — see the master-catalog approach in the schema.
+- **Shop state is first-class**: open/closed, business hours, accepting-orders,
+  suspended. "Show shops which are open" is a core query, not a detail.
+- **Order flow gains a step**: the shop must accept and prepare before a rider is
+  assigned. Shop rejection and timeout are real states to design for.
+- **We hold customer money and owe it to shops** — that requires a payouts ledger
+  and reconciliation, not just a payment integration.
+
+---
+
 | # | Decision | Status | Date |
 |---|----------|--------|------|
 | 1 | Authentication — phone + OTP, self-owned | ✅ Locked | 2026-09-08 |
 | 2 | Payment gateway — Razorpay | ✅ Locked | 2026-09-08 |
 | 3 | Mobile tooling — Expo with dev builds | ✅ Locked | 2026-09-08 |
-| 4 | Mobile apps — two separate apps | ✅ Locked | 2026-09-08 |
+| 4 | Mobile apps — three separate apps | ✅ Locked (revised 2026-09-09) | 2026-09-08 |
 | 5 | Hosting — DigitalOcean, Bangalore (BLR1) | ✅ Locked | 2026-09-08 |
 
 ---
@@ -141,6 +212,22 @@ At Rs 400 AOV with 75% UPI / 20% cards / 5% COD:
 rate is worth ~Rs 15,000/year; the UPI rate is worth ~Rs 26 lakh/year. Treat it as
 a negotiation to be won before scaling, not a fixed cost.
 
+### Marketplace addendum (added 2026-09-09)
+
+The business model is a marketplace: we collect from the customer and settle to
+shop owners minus commission. That needs **split settlement**, not plain checkout:
+
+- **Razorpay Route** — sub-merchant accounts, split a payment across shop + platform,
+  scheduled settlements, and a transfers ledger.
+- Cashfree's **Easy Split** is the equivalent. Cashfree's payouts strength — noted
+  above as its edge — matters considerably more under this model than it did under
+  the dark-store model.
+- **Re-evaluate Razorpay vs Cashfree specifically on split-settlement and payout
+  features before building checkout.** The gateway choice stands for now; the
+  integration surface is different from what was originally scoped.
+- Shop owners need onboarding as sub-merchants (their own KYC) — another calendar
+  clock, per shop.
+
 ### Implementation rules
 
 - **UPI Intent flow only** — never Collect (manual VPA entry kills conversion) and
@@ -230,25 +317,38 @@ leave Expo, painful to adopt it later — is the core argument for starting here
       we are clear.
 - [ ] Add `android/` and `ios/` to `.gitignore` from the first commit.
 
-## 4. Mobile apps — two separate apps
+## 4. Mobile apps — three separate apps
 
 **Status:** ✅ Locked — 2026-09-08
 
 ### Decision
 
-**Two separate Expo apps** — customer and rider — in one monorepo, sharing code
-through local packages. Not one app with a role switch.
+**Revised 2026-09-09:** the marketplace model adds a third audience — shop owners —
+so this is now **three separate Expo apps**, not two. The reasoning below is
+unchanged and applies with more force.
 
 ```
 frontend/
 ├── apps/
-│   ├── customer/        # Expo app - browse, cart, checkout, track
-│   └── rider/           # Expo app - go online, accept, pick, deliver
+│   ├── customer/        # browse open shops, cart, checkout, track
+│   ├── shop/            # NEW - shop owner: open/closed, catalog, price,
+│   │                    #       stock, accept/reject orders, earnings
+│   └── rider/           # go online, accept, pick up from shop, deliver
 └── packages/
     ├── api-client/      # typed API client, auth interceptor, refresh logic
     ├── types/           # shared request/response types
     └── ui/              # shared primitives only - most UI is NOT shared
 ```
+
+Plus **internal ops/admin on web** (Retool or similar initially, per the stack
+notes) — shop approval, catalog moderation, order intervention, payout runs.
+
+**The shop app is mobile, not web.** Shop owners are Android-first and need
+reliable background push with an audible alert when an order arrives — a browser
+tab cannot do that dependably.
+
+**Scope warning:** three apps plus an admin surface is substantially more work than
+the original two-app plan. See the phasing note below.
 
 ### Why
 
@@ -284,9 +384,17 @@ frontend/
       not after.
 - [ ] Build `packages/api-client` first, consumed by the customer app — the rider
       app inherits it for free.
-- [ ] Keep two separate EAS project IDs and two bundle identifiers from the start
-      (e.g. `in.vigo.customer`, `in.vigo.rider`) — renaming later means new store
-      listings.
+- [ ] Keep three separate EAS project IDs and bundle identifiers from the start
+      (`in.vigo.customer`, `in.vigo.shop`, `in.vigo.rider`) — renaming later means
+      new store listings.
+
+### Phasing — do not build all three at once
+
+1. **Customer app first**, against seeded shop data entered via SQL.
+2. **Shop app second** — this is what makes the marketplace real, and it is the
+   app that unblocks onboarding actual shops.
+3. **Rider app last.** Manual dispatch (a phone call, a WhatsApp group) is viable
+   for the first handful of shops and buys weeks.
 
 ## 5. Hosting — DigitalOcean, Bangalore (BLR1)
 

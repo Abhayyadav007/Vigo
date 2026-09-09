@@ -1,0 +1,28 @@
+# Local development only. Production Postgres is DigitalOcean Managed (Decision 5).
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: vigo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vigo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vigo_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-vigo}
+      # IST everywhere — India-only scope
+      TZ: Asia/Kolkata
+      PGTZ: Asia/Kolkata
+    ports:
+      # Override POSTGRES_PORT in .env if 5432 is already taken locally
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - vigo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vigo} -d ${POSTGRES_DB:-vigo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  vigo_pgdata:
