@@ -1,0 +1,76 @@
+name: backend-ci
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', 'db/**', '.github/workflows/backend-ci.yml']
+  pull_request:
+    paths: ['backend/**', 'db/**', '.github/workflows/backend-ci.yml']
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  check:
+    name: fmt / clippy / test
+    runs-on: ubuntu-latest
+    # Builds against the committed .sqlx cache - no database needed.
+    env:
+      SQLX_OFFLINE: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+
+  sqlx-drift:
+    name: .sqlx cache is current
+    runs-on: ubuntu-latest
+    # Catches the case where someone edits a query but forgets
+    # `cargo sqlx prepare` - the offline cache would silently go stale.
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: vigo
+          POSTGRES_PASSWORD: vigo
+          POSTGRES_DB: vigo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U vigo -d vigo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://vigo:vigo@localhost:5432/vigo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --version 0.9.0 --no-default-features --features rustls,postgres --locked
+
+      - name: Run migrations
+        run: sqlx migrate run --source ../db/migrations
+
+      - name: Verify .sqlx matches the queries in the code
+        run: cargo sqlx prepare --workspace --check -- --all-targets

@@ -1,0 +1,11 @@
+[package]
+name = "domain"
+version.workspace = true
+edition.workspace = true
+
+# Deliberately no axum and no sqlx: domain stays pure so the order state
+# machine can be unit-tested without a database or a web framework.
+[dependencies]
+serde.workspace = true
+uuid.workspace = true
+chrono.workspace = true
