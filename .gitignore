@@ -1,0 +1,21 @@
+# Rust / Cargo
+/target/
+Cargo.lock
+ 
+# Environment
+.env
+.env.*
+!.env.example
+ 
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+ 
+# Logs
+*.log
+ 
+# SQLx offline query cache (commit this if you want offline builds)
+# .sqlx/
