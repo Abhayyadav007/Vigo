@@ -1,12 +1,11 @@
-import { StyleSheet, Text, View } from "react-native";
-import { colors, fontSize, radius, spacing } from "./theme";
+import { Text, View } from "react-native";
 
 export type StatusTone = "ok" | "down" | "pending";
 
-const toneColor: Record<StatusTone, string> = {
-  ok: colors.success,
-  down: colors.danger,
-  pending: colors.textMuted,
+const dot: Record<StatusTone, string> = {
+  ok: "bg-success",
+  down: "bg-danger",
+  pending: "bg-muted",
 };
 
 export interface StatusCardProps {
@@ -16,30 +15,15 @@ export interface StatusCardProps {
 
 export function StatusCard({ title, rows }: StatusCardProps) {
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{title}</Text>
+    <View className="gap-2 self-stretch rounded-lg bg-surface p-4">
+      <Text className="mb-1 text-base font-semibold text-ink">{title}</Text>
       {rows.map((row) => (
-        <View key={row.label} style={styles.row}>
-          <View style={[styles.dot, { backgroundColor: toneColor[row.tone] }]} />
-          <Text style={styles.label}>{row.label}</Text>
-          <Text style={styles.value}>{row.value}</Text>
+        <View key={row.label} className="flex-row items-center gap-2">
+          <View className={`h-2.5 w-2.5 rounded-pill ${dot[row.tone]}`} />
+          <Text className="flex-1 text-sm text-ink">{row.label}</Text>
+          <Text className="text-sm text-muted">{row.value}</Text>
         </View>
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-    alignSelf: "stretch",
-  },
-  title: { fontSize: fontSize.md, fontWeight: "600", color: colors.text, marginBottom: spacing.xs },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  dot: { width: 10, height: 10, borderRadius: radius.pill },
-  label: { flex: 1, fontSize: fontSize.sm, color: colors.text },
-  value: { fontSize: fontSize.sm, color: colors.textMuted },
-});

@@ -9,25 +9,25 @@ use crate::dto::error::{ErrorBody, ErrorDetail};
 /// Every fallible handler returns `Result<_, AppError>`. The response body is
 /// always `{ "error": { "code": "...", "message": "..." } }`.
 #[derive(Debug, thiserror::Error)]
-#[expect(
-    dead_code,
-    reason = "variants are constructed by handlers from phase 2 on"
-)]
 pub enum AppError {
     #[error("{0}")]
     BadRequest(String),
     #[error("{0}")]
     Validation(String),
+    /// Missing, malformed, expired or otherwise unverifiable credentials.
     #[error("authentication required")]
     Unauthorized,
-    #[error("insufficient permissions")]
-    Forbidden,
+    /// Authenticated but not allowed. `code` lets clients tell cases apart
+    /// (e.g. `USER_NOT_REGISTERED`, `ACCOUNT_DISABLED`, `FORBIDDEN`).
+    #[error("{message}")]
+    Forbidden {
+        code: &'static str,
+        message: &'static str,
+    },
     #[error("{0} not found")]
     NotFound(&'static str),
     #[error("{0}")]
     Conflict(String),
-    #[error("too many requests")]
-    RateLimited,
     #[error("{0}")]
     ServiceUnavailable(String),
     #[error(transparent)]
@@ -41,15 +41,21 @@ pub enum AppError {
 }
 
 impl AppError {
+    pub const fn forbidden() -> Self {
+        Self::Forbidden {
+            code: "FORBIDDEN",
+            message: "insufficient permissions",
+        }
+    }
+
     fn status(&self) -> StatusCode {
         match self {
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
             Self::Validation(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
-            Self::Forbidden => StatusCode::FORBIDDEN,
+            Self::Forbidden { .. } => StatusCode::FORBIDDEN,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
             Self::Conflict(_) => StatusCode::CONFLICT,
-            Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             Self::ServiceUnavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::Database(sqlx::Error::RowNotFound) => StatusCode::NOT_FOUND,
             Self::Database(_) | Self::Redis(_) | Self::RedisPool(_) | Self::Internal(_) => {
@@ -63,15 +69,31 @@ impl AppError {
             Self::BadRequest(_) => "BAD_REQUEST",
             Self::Validation(_) => "VALIDATION_FAILED",
             Self::Unauthorized => "UNAUTHORIZED",
-            Self::Forbidden => "FORBIDDEN",
+            Self::Forbidden { code, .. } => code,
             Self::NotFound(_) | Self::Database(sqlx::Error::RowNotFound) => "NOT_FOUND",
             Self::Conflict(_) => "CONFLICT",
-            Self::RateLimited => "RATE_LIMITED",
             Self::ServiceUnavailable(_) => "SERVICE_UNAVAILABLE",
             Self::Database(_) | Self::Redis(_) | Self::RedisPool(_) | Self::Internal(_) => {
                 "INTERNAL"
             }
         }
+    }
+}
+
+impl From<validator::ValidationErrors> for AppError {
+    fn from(errors: validator::ValidationErrors) -> Self {
+        let fields: Vec<String> = errors
+            .field_errors()
+            .into_iter()
+            .map(|(field, errs)| {
+                let reason = errs
+                    .first()
+                    .and_then(|e| e.message.as_deref().map(str::to_owned))
+                    .unwrap_or_else(|| "is invalid".to_owned());
+                format!("{field} {reason}")
+            })
+            .collect();
+        Self::Validation(fields.join("; "))
     }
 }
 
@@ -96,5 +118,4 @@ impl IntoResponse for AppError {
     }
 }
 
-#[expect(dead_code, reason = "used by handlers from phase 2 on")]
 pub type AppResult<T> = Result<T, AppError>;

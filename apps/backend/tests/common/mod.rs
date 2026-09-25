@@ -1,0 +1,201 @@
+//! Shared harness: builds the real router over a per-test database (from
+//! `#[sqlx::test]`) and the dev Redis, with a verifier that trusts the RSA
+//! key in `tests/fixtures`, so tokens go through the real RS256 checks.
+
+#![allow(dead_code)]
+
+use std::{collections::HashMap, sync::Arc, time::Duration};
+
+use axum::{
+    Router,
+    body::Body,
+    http::{Method, Request, StatusCode, header},
+};
+use backend::{
+    app,
+    auth::FirebaseVerifier,
+    config::{AppEnv, Config},
+    state::AppState,
+};
+use http_body_util::BodyExt;
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header};
+use serde_json::{Value, json};
+use sqlx::PgPool;
+use tower::ServiceExt;
+
+pub const PROJECT_ID: &str = "vigo-test";
+pub const KID: &str = "test-kid";
+const PRIVATE_KEY: &[u8] = include_bytes!("../fixtures/test_rsa_private.pem");
+const PUBLIC_KEY: &[u8] = include_bytes!("../fixtures/test_rsa_public.pem");
+const OTHER_PRIVATE_KEY: &[u8] = include_bytes!("../fixtures/other_rsa_private.pem");
+
+pub struct TestApp {
+    pub state: AppState,
+    router: Router,
+}
+
+impl TestApp {
+    pub fn new(db: PgPool) -> Self {
+        let _ = dotenvy::dotenv();
+        let redis_url =
+            std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".into());
+        let redis = deadpool_redis::Config::from_url(&redis_url)
+            .create_pool(Some(deadpool_redis::Runtime::Tokio1))
+            .expect("redis pool");
+        let key = DecodingKey::from_rsa_pem(PUBLIC_KEY).expect("public key");
+        let verifier =
+            FirebaseVerifier::with_static_keys(PROJECT_ID, HashMap::from([(KID.into(), key)]));
+
+        let config = Config {
+            app_env: AppEnv::Development,
+            addr: "127.0.0.1:0".parse().expect("addr"),
+            database_url: String::new(),
+            db_max_connections: 5,
+            redis_url,
+            firebase_project_id: PROJECT_ID.into(),
+            firebase_auth_emulator_host: None,
+            session_cache_ttl: Duration::from_secs(300),
+            cors_allowed_origins: vec![],
+            request_timeout: Duration::from_secs(10),
+        };
+        let state = AppState {
+            config: Arc::new(config),
+            db,
+            redis,
+            verifier: Arc::new(verifier),
+        };
+        Self {
+            router: app::build_router(state.clone()),
+            state,
+        }
+    }
+
+    pub async fn request(
+        &self,
+        method: Method,
+        uri: &str,
+        token: Option<&str>,
+        body: Option<Value>,
+    ) -> (StatusCode, Value) {
+        let mut req = Request::builder().method(method).uri(uri);
+        if let Some(t) = token {
+            req = req.header(header::AUTHORIZATION, format!("Bearer {t}"));
+        }
+        let req = match body {
+            Some(b) => req
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(b.to_string())),
+            None => req.body(Body::empty()),
+        }
+        .expect("request");
+
+        let res = self.router.clone().oneshot(req).await.expect("response");
+        let status = res.status();
+        let bytes = res.into_body().collect().await.expect("body").to_bytes();
+        let json = if bytes.is_empty() {
+            Value::Null
+        } else {
+            serde_json::from_slice(&bytes)
+                .unwrap_or_else(|_| panic!("non-JSON body: {}", String::from_utf8_lossy(&bytes)))
+        };
+        (status, json)
+    }
+
+    pub async fn get(&self, uri: &str, token: Option<&str>) -> (StatusCode, Value) {
+        self.request(Method::GET, uri, token, None).await
+    }
+
+    /// Signs in (sync) as a new user and returns their token.
+    pub async fn signed_in(&self, phone: &str) -> (String, Value) {
+        let token = TokenBuilder::new().phone(phone).sign();
+        let (status, body) = self
+            .request(Method::POST, "/v1/auth/sync", Some(&token), None)
+            .await;
+        assert_eq!(status, StatusCode::OK, "sync failed: {body}");
+        (token, body)
+    }
+}
+
+/// Builds Firebase-shaped ID tokens; defaults are valid.
+#[derive(Clone)]
+pub struct TokenBuilder {
+    pub claims: serde_json::Map<String, Value>,
+    kid: Option<String>,
+    key: &'static [u8],
+    alg: Algorithm,
+}
+
+impl TokenBuilder {
+    pub fn new() -> Self {
+        let now = chrono::Utc::now().timestamp();
+        let uid = format!("uid-{}", uuid::Uuid::new_v4().simple());
+        let claims = json!({
+            "sub": uid,
+            "aud": PROJECT_ID,
+            "iss": format!("https://securetoken.google.com/{PROJECT_ID}"),
+            "iat": now,
+            "exp": now + 3600,
+            "auth_time": now,
+            "phone_number": random_phone(),
+            "firebase": { "sign_in_provider": "phone" },
+        });
+        let Value::Object(claims) = claims else {
+            unreachable!()
+        };
+        Self {
+            claims,
+            kid: Some(KID.into()),
+            key: PRIVATE_KEY,
+            alg: Algorithm::RS256,
+        }
+    }
+
+    pub fn set(mut self, claim: &str, value: Value) -> Self {
+        self.claims.insert(claim.into(), value);
+        self
+    }
+
+    pub fn remove(mut self, claim: &str) -> Self {
+        self.claims.remove(claim);
+        self
+    }
+
+    pub fn uid(self, uid: &str) -> Self {
+        self.set("sub", json!(uid))
+    }
+
+    pub fn phone(self, phone: &str) -> Self {
+        self.set("phone_number", json!(phone))
+    }
+
+    pub fn kid(mut self, kid: Option<&str>) -> Self {
+        self.kid = kid.map(str::to_owned);
+        self
+    }
+
+    pub fn signed_by_other_key(mut self) -> Self {
+        self.key = OTHER_PRIVATE_KEY;
+        self
+    }
+
+    pub fn sub(&self) -> String {
+        self.claims["sub"].as_str().unwrap_or_default().to_owned()
+    }
+
+    pub fn sign(&self) -> String {
+        let mut header = Header::new(self.alg);
+        header.kid = self.kid.clone();
+        let key = EncodingKey::from_rsa_pem(self.key).expect("private key");
+        jsonwebtoken::encode(&header, &self.claims, &key).expect("sign")
+    }
+}
+
+/// A random valid Indian mobile number, so parallel tests never collide.
+pub fn random_phone() -> String {
+    let n = uuid::Uuid::new_v4().as_u128() % 1_000_000_000;
+    format!("+919{n:09}")
+}
+
+pub fn error_code(body: &Value) -> &str {
+    body["error"]["code"].as_str().unwrap_or("<none>")
+}

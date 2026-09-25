@@ -29,3 +29,11 @@ apps/mobile-*/expo-env.d.ts
 
 # Logs
 *.log
+
+# Firebase native config files (per environment)
+apps/mobile-*/firebase/*.plist
+apps/mobile-*/firebase/*.json
+
+# Playwright
+apps/web-admin/test-results/
+apps/web-admin/playwright-report/

@@ -6,9 +6,29 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "ios": { "bundleIdentifier": "com.vigo.rider", "supportsTablet": true },
-    "android": { "package": "com.vigo.rider" },
-    "plugins": ["expo-router"],
-    "experiments": { "typedRoutes": true }
+    "ios": {
+      "bundleIdentifier": "com.vigo.rider",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.vigo.rider"
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

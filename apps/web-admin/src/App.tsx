@@ -1,31 +1,39 @@
-import { useHealth } from "@vigo/api-client";
-import type { ComponentStatus } from "@vigo/types";
+import { formatIndianPhone, useAuth } from "@vigo/api-client";
+import { useState } from "react";
+import { Login } from "./pages/Login";
+import { Overview } from "./pages/Overview";
+import { Staff } from "./pages/Staff";
 
-// TODO(phase-2): Firebase login + ADMIN role gate; TODO(phase-3): store/catalog screens.
+const PAGES = { overview: "Overview", staff: "Staff" } as const;
+type Page = keyof typeof PAGES;
+
+// TODO(phase-3): replace the tab state with a router once there are more pages.
 export function App() {
-  const health = useHealth();
+  const { state, signOut } = useAuth();
+  const [page, setPage] = useState<Page>("overview");
 
-  const cell = (s: ComponentStatus | undefined) => {
-    const value = s ?? (health.isError ? "unreachable" : "…");
-    return <span className={`pill pill-${s ?? (health.isError ? "down" : "pending")}`}>{value}</span>;
-  };
+  if (state.status === "loading") return <div className="center muted">Loading…</div>;
+  if (state.status === "signedOut") return <Login error={state.error} />;
 
   return (
-    <main className="shell">
-      <h1>Vigo Admin</h1>
-      <section className="card">
-        <h2>Backend</h2>
-        <dl>
-          <dt>API</dt>
-          <dd>{cell(health.data?.status)}</dd>
-          <dt>Postgres</dt>
-          <dd>{cell(health.data?.database)}</dd>
-          <dt>Redis</dt>
-          <dd>{cell(health.data?.redis)}</dd>
-          <dt>Version</dt>
-          <dd>{health.data?.version ?? "—"}</dd>
-        </dl>
-      </section>
-    </main>
+    <div className="layout">
+      <header className="topbar">
+        <strong className="brand">Vigo Admin</strong>
+        <nav>
+          {(Object.keys(PAGES) as Page[]).map((p) => (
+            <button key={p} className={`tab ${p === page ? "active" : ""}`} onClick={() => setPage(p)}>
+              {PAGES[p]}
+            </button>
+          ))}
+        </nav>
+        <span className="muted" data-testid="signed-in-as">
+          {formatIndianPhone(state.user.phone)}
+        </span>
+        <button className="btn secondary" onClick={() => void signOut()}>
+          Sign out
+        </button>
+      </header>
+      <main className="shell">{page === "overview" ? <Overview /> : <Staff currentUserId={state.user.id} />}</main>
+    </div>
   );
 }

@@ -4,5 +4,8 @@
 //! `cargo test export_bindings` writes them to `packages/types/src/bindings/`
 //! (the directory is set via `TS_RS_EXPORT_DIR` in `.cargo/config.toml`).
 
+pub mod admin;
+pub mod auth;
 pub mod error;
 pub mod health;
+pub mod page;

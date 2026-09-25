@@ -1,23 +1,10 @@
-// Design tokens shared by every client. Phase 2 feeds these into the
-// NativeWind/Tailwind config of each app.
-// TODO(phase-2): shared RN components (Button, Screen, TextField) + NativeWind preset.
+// Design tokens shared by every client. Values live in tokens.json so the
+// Tailwind preset (tailwind-preset.js) and TS code read the same source.
+import tokens from "./tokens.json";
 
-export const colors = {
-  brand: "#0C8346",
-  brandDark: "#07542D",
-  accent: "#F5B301",
-  background: "#FFFFFF",
-  surface: "#F4F6F5",
-  text: "#111827",
-  textMuted: "#6B7280",
-  border: "#E5E7EB",
-  success: "#16A34A",
-  warning: "#D97706",
-  danger: "#DC2626",
-} as const;
-
-export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
-export const radius = { sm: 6, md: 10, lg: 16, pill: 999 } as const;
-export const fontSize = { xs: 12, sm: 14, md: 16, lg: 20, xl: 24, xxl: 32 } as const;
+export const colors = tokens.colors;
+export const spacing = tokens.spacing;
+export const radius = tokens.radius;
+export const fontSize = tokens.fontSize;
 
 export type ColorToken = keyof typeof colors;

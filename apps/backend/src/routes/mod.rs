@@ -4,6 +4,9 @@ use axum::{Router, routing::get};
 
 use crate::{error::AppError, handlers, state::AppState};
 
+mod admin;
+mod auth;
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/healthz", get(handlers::health::healthz))
@@ -12,6 +15,8 @@ pub fn router() -> Router<AppState> {
 }
 
 fn v1() -> Router<AppState> {
-    // TODO(phase-2): nest auth, customer, picker, rider, admin and ws routers here.
+    // TODO(phase-3): customer, picker and rider routers; TODO(phase-5): ws.
     Router::new()
+        .nest("/auth", auth::router())
+        .nest("/admin", admin::router())
 }

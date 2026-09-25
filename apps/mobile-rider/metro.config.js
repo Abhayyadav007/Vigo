@@ -1,6 +1,7 @@
 // Learn more: https://docs.expo.dev/guides/customizing-metro/
 const path = require("node:path");
 const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
 
 // Expo only reads .env from this app's folder. Also load the shared repo-root
 // .env so EXPO_PUBLIC_* values (e.g. EXPO_PUBLIC_API_URL) reach the bundle.
@@ -16,4 +17,4 @@ try {
   if (err.code !== "ENOENT") throw err;
 }
 
-module.exports = getDefaultConfig(__dirname);
+module.exports = withNativeWind(getDefaultConfig(__dirname), { input: "./global.css" });

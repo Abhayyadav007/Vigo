@@ -1,17 +1,28 @@
-import { useHealth } from "@vigo/api-client";
-import { StatusCard, colors, fontSize, spacing, type StatusTone } from "@vigo/ui";
-import { StyleSheet, Text } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { formatIndianPhone, useAuth, useCurrentUser, useHealth } from "@vigo/api-client";
+import { Button, Screen, StatusCard, type StatusTone } from "@vigo/ui";
+import { Text, View } from "react-native";
 
-// TODO(phase-2): replace with the phone-login flow for the PICKER role.
+// TODO(phase-5): replace with the real Vigo Picker home screen.
 export default function Home() {
+  const user = useCurrentUser();
+  const { signOut } = useAuth();
   const health = useHealth();
   const tone = (s: "ok" | "down" | undefined): StatusTone => s ?? (health.isError ? "down" : "pending");
   const label = (s: "ok" | "down" | undefined) => s ?? (health.isError ? "unreachable" : "…");
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <Text style={styles.title}>Vigo Picker</Text>
+    <Screen scroll>
+      <View className="gap-1">
+        <Text className="text-3xl font-bold text-brand">Vigo Picker</Text>
+        <Text className="text-base text-muted">Signed in as {formatIndianPhone(user.phone)}</Text>
+      </View>
+      <StatusCard
+        title="Account"
+        rows={[
+          { label: "Role", tone: "ok", value: user.role },
+          { label: "Store", tone: user.storeId ? "ok" : "pending", value: user.storeId ?? "not assigned" },
+        ]}
+      />
       <StatusCard
         title="Backend"
         rows={[
@@ -20,11 +31,7 @@ export default function Home() {
           { label: "Redis", tone: tone(health.data?.redis), value: label(health.data?.redis) },
         ]}
       />
-    </SafeAreaView>
+      <Button title="Sign out" variant="secondary" size="lg" onPress={() => void signOut()} />
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, padding: spacing.xl, gap: spacing.xl, backgroundColor: colors.background },
-  title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.brand },
-});

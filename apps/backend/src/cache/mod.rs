@@ -1,4 +1,6 @@
-//! Redis access. Later phases add `inventory`, `geo` and `session` submodules.
+//! Redis access. Later phases add `inventory` and `geo` submodules.
+
+pub mod session;
 
 use deadpool_redis::{Pool, redis};
 

@@ -10,7 +10,8 @@
   },
   "scripts": {
     "typegen": "node scripts/gen-index.mjs --clean && SQLX_OFFLINE=true cargo test -p backend export_bindings && node scripts/gen-index.mjs",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "typescript": "catalog:"

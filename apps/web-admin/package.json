@@ -6,20 +6,25 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "e2e": "playwright test",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@tanstack/react-query": "catalog:",
     "@vigo/api-client": "workspace:*",
     "@vigo/types": "workspace:*",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "firebase": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "@playwright/test": "catalog:",
+    "@types/node": "^24.0.0"
   }
 }

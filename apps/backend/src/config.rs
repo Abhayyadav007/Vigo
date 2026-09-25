@@ -27,9 +27,12 @@ pub struct Config {
     pub database_url: String,
     pub db_max_connections: u32,
     pub redis_url: String,
-    // TODO(phase-2): consumed by the Firebase ID token verifier.
-    #[expect(dead_code, reason = "used by Firebase auth in phase 2")]
     pub firebase_project_id: String,
+    /// `host:port` of the Firebase Auth emulator. When set, the backend accepts
+    /// the emulator's unsigned tokens. Refused when `APP_ENV=production`.
+    pub firebase_auth_emulator_host: Option<String>,
+    /// How long `firebase_uid -> session` lookups stay cached in Redis.
+    pub session_cache_ttl: Duration,
     pub cors_allowed_origins: Vec<String>,
     pub request_timeout: Duration,
 }
@@ -43,13 +46,23 @@ impl Config {
             .parse()
             .with_context(|| format!("invalid HOST/PORT `{host}:{port}`"))?;
 
+        let app_env = parse_or("APP_ENV", AppEnv::Development)?;
+        let firebase_auth_emulator_host = env::var("FIREBASE_AUTH_EMULATOR_HOST")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
+        if app_env == AppEnv::Production && firebase_auth_emulator_host.is_some() {
+            bail!("FIREBASE_AUTH_EMULATOR_HOST must not be set when APP_ENV=production");
+        }
+
         Ok(Self {
-            app_env: parse_or("APP_ENV", AppEnv::Development)?,
+            app_env,
             addr,
             database_url: required("DATABASE_URL")?,
             db_max_connections: parse_or("DB_MAX_CONNECTIONS", 10)?,
             redis_url: required("REDIS_URL")?,
             firebase_project_id: required("FIREBASE_PROJECT_ID")?,
+            firebase_auth_emulator_host,
+            session_cache_ttl: Duration::from_secs(parse_or("SESSION_CACHE_TTL_SECS", 300)?),
             cors_allowed_origins: var_or("CORS_ALLOWED_ORIGINS", "")
                 .split(',')
                 .map(str::trim)

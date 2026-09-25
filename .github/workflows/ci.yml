@@ -110,8 +110,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Typecheck and build
-        run: pnpm turbo run typecheck build --filter='!@vigo/backend'
+      - name: Lint, typecheck and build
+        run: pnpm turbo run lint typecheck build --filter='!@vigo/backend'
 
       - name: Generated types are committed and up to date
         run: |
@@ -141,9 +141,80 @@ jobs:
           path: apps/web-admin/dist
           retention-days: 14
 
+  e2e:
+    name: E2E (Firebase emulator + backend + web-admin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services: *services
+    env:
+      FIREBASE_PROJECT_ID: demo-vigo
+      FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+      VITE_API_URL: http://localhost:8080
+      VITE_FIREBASE_API_KEY: demo-api-key
+      VITE_FIREBASE_PROJECT_ID: demo-vigo
+      VITE_FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      # Bootstrap-admin CLI used by the tests, run from the repo root.
+      PROMOTE_CMD: ./target/debug/backend promote-admin
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: backend
+          save-if: false
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      # The Firebase emulators run on the JVM.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start Firebase Auth emulator
+        run: |
+          pnpm dlx firebase-tools@15 emulators:start --only auth --project demo-vigo > emulator.log 2>&1 &
+          for _ in $(seq 1 90); do curl -fsS http://localhost:9099 >/dev/null 2>&1 && exit 0; sleep 2; done
+          cat emulator.log; exit 1
+
+      - name: Start backend (emulator mode)
+        run: |
+          cargo build --locked -p backend
+          ./target/debug/backend > backend.log 2>&1 &
+          scripts/smoke-test.sh http://localhost:8080
+
+      - name: API e2e (phone OTP -> sync -> roles)
+        run: node scripts/e2e-auth.mjs http://localhost:8080
+
+      - name: Browser e2e (web-admin)
+        run: |
+          pnpm --filter @vigo/web-admin exec playwright install --with-deps chromium
+          pnpm --filter @vigo/web-admin e2e
+
+      - name: Logs
+        if: failure()
+        run: |
+          echo "::group::backend"; cat backend.log || true; echo "::endgroup::"
+          echo "::group::emulator"; cat emulator.log || true; echo "::endgroup::"
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: apps/web-admin/playwright-report
+          retention-days: 14
+
   docker:
     name: Backend image (build, smoke, publish on main)
-    needs: [backend, frontend]
+    needs: [backend, frontend, e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services: *services
