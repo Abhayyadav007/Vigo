@@ -10,9 +10,14 @@ use tower_http::{
     timeout::TimeoutLayer,
     trace::{DefaultOnResponse, TraceLayer},
 };
+use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 use tracing::Level;
 
-use crate::{routes, state::AppState};
+use crate::{
+    routes,
+    services::media_service::{LOCAL_URL_PREFIX, MediaStore},
+    state::AppState,
+};
 
 const REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
 
@@ -45,7 +50,24 @@ pub fn build_router(state: AppState) -> Router {
             state.config.request_timeout,
         ));
 
-    routes::router().layer(layers).with_state(state)
+    let mut router = routes::router();
+    match state.media.as_ref() {
+        MediaStore::Local { dir } => {
+            // Upload names are random UUIDs, so files never change: cache forever.
+            let media = ServiceBuilder::new()
+                .layer(SetResponseHeaderLayer::overriding(
+                    header::CACHE_CONTROL,
+                    HeaderValue::from_static("public, max-age=31536000, immutable"),
+                ))
+                .layer(SetResponseHeaderLayer::overriding(
+                    header::X_CONTENT_TYPE_OPTIONS,
+                    HeaderValue::from_static("nosniff"),
+                ))
+                .service(ServeDir::new(dir));
+            router = router.nest_service(LOCAL_URL_PREFIX, media);
+        }
+    }
+    router.layer(layers).with_state(state)
 }
 
 fn cors(allowed: &[String]) -> CorsLayer {

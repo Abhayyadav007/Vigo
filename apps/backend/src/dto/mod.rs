@@ -6,6 +6,10 @@
 
 pub mod admin;
 pub mod auth;
+pub mod catalog;
+pub mod customer;
 pub mod error;
+pub mod geo;
 pub mod health;
 pub mod page;
+pub mod store;

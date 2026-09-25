@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
-use crate::{auth::FirebaseVerifier, cache, config::Config};
+use crate::{auth::FirebaseVerifier, cache, config::Config, services::media_service::MediaStore};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -11,6 +11,7 @@ pub struct AppState {
     pub db: PgPool,
     pub redis: deadpool_redis::Pool,
     pub verifier: Arc<FirebaseVerifier>,
+    pub media: Arc<MediaStore>,
 }
 
 impl AppState {
@@ -52,11 +53,17 @@ impl AppState {
             }
         };
 
+        tracing::info!(dir = %config.media_dir.display(), "local media store");
+        let media = MediaStore::Local {
+            dir: config.media_dir.clone(),
+        };
+
         Ok(Self {
             config: Arc::new(config),
             db,
             redis,
             verifier: Arc::new(verifier),
+            media: Arc::new(media),
         })
     }
 }

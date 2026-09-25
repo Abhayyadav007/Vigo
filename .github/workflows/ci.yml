@@ -110,8 +110,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Lint, typecheck and build
-        run: pnpm turbo run lint typecheck build --filter='!@vigo/backend'
+      - name: Lint, typecheck, test and build
+        run: pnpm turbo run lint typecheck test build --filter='!@vigo/backend'
 
       - name: Generated types are committed and up to date
         run: |
@@ -154,8 +154,9 @@ jobs:
       VITE_FIREBASE_PROJECT_ID: demo-vigo
       VITE_FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
       CORS_ALLOWED_ORIGINS: http://localhost:5173
-      # Bootstrap-admin CLI used by the tests, run from the repo root.
+      # Backend CLI (promote-admin, seed-demo) used by the tests, run from the repo root.
       PROMOTE_CMD: ./target/debug/backend promote-admin
+      BACKEND_CLI: ./target/debug/backend
     steps:
       - uses: actions/checkout@v7
 
@@ -191,7 +192,9 @@ jobs:
           scripts/smoke-test.sh http://localhost:8080
 
       - name: API e2e (phone OTP -> sync -> roles)
-        run: node scripts/e2e-auth.mjs http://localhost:8080
+        run: |
+          ./target/debug/backend seed-demo
+          node scripts/e2e-auth.mjs http://localhost:8080
 
       - name: Browser e2e (web-admin)
         run: |

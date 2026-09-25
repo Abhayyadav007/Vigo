@@ -18,10 +18,13 @@ FROM debian:trixie-slim AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
-    && useradd --system --uid 10001 --no-create-home vigo
+    && useradd --system --uid 10001 --no-create-home vigo \
+    && mkdir -p /data/media && chown vigo /data/media
 COPY --from=build /usr/local/bin/backend /usr/local/bin/backend
 USER vigo
-ENV APP_ENV=production HOST=0.0.0.0 PORT=8080
+ENV APP_ENV=production HOST=0.0.0.0 PORT=8080 MEDIA_DIR=/data/media
+# Uploaded images (local media store). Mount a volume to keep them.
+VOLUME /data/media
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -fsS "http://127.0.0.1:${PORT}/healthz" || exit 1

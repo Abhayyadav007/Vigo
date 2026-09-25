@@ -15,6 +15,7 @@ use backend::{
     app,
     auth::FirebaseVerifier,
     config::{AppEnv, Config},
+    services::media_service::MediaStore,
     state::AppState,
 };
 use http_body_util::BodyExt;
@@ -57,12 +58,16 @@ impl TestApp {
             session_cache_ttl: Duration::from_secs(300),
             cors_allowed_origins: vec![],
             request_timeout: Duration::from_secs(10),
+            media_dir: std::env::temp_dir()
+                .join(format!("vigo-test-media-{}", uuid::Uuid::new_v4())),
         };
+        let media_dir = config.media_dir.clone();
         let state = AppState {
             config: Arc::new(config),
             db,
             redis,
             verifier: Arc::new(verifier),
+            media: Arc::new(MediaStore::Local { dir: media_dir }),
         };
         Self {
             router: app::build_router(state.clone()),
@@ -99,6 +104,54 @@ impl TestApp {
                 .unwrap_or_else(|_| panic!("non-JSON body: {}", String::from_utf8_lossy(&bytes)))
         };
         (status, json)
+    }
+
+    /// Multipart upload of a single file field.
+    pub async fn upload(
+        &self,
+        uri: &str,
+        token: &str,
+        field: &str,
+        filename: &str,
+        bytes: &[u8],
+    ) -> (StatusCode, Value) {
+        let boundary = "vigo-test-boundary";
+        let mut body = format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"{field}\"; filename=\"{filename}\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+        )
+        .into_bytes();
+        body.extend_from_slice(bytes);
+        body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri(uri)
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .header(
+                header::CONTENT_TYPE,
+                format!("multipart/form-data; boundary={boundary}"),
+            )
+            .body(Body::from(body))
+            .expect("request");
+        let res = self.router.clone().oneshot(req).await.expect("response");
+        let status = res.status();
+        let bytes = res.into_body().collect().await.expect("body").to_bytes();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+        )
+    }
+
+    /// GET returning raw bytes and headers (static files).
+    pub async fn raw_get(&self, uri: &str) -> (StatusCode, Vec<u8>, axum::http::HeaderMap) {
+        let req = Request::builder()
+            .uri(uri)
+            .body(Body::empty())
+            .expect("request");
+        let res = self.router.clone().oneshot(req).await.expect("response");
+        let status = res.status();
+        let headers = res.headers().clone();
+        let bytes = res.into_body().collect().await.expect("body").to_bytes();
+        (status, bytes.to_vec(), headers)
     }
 
     pub async fn get(&self, uri: &str, token: Option<&str>) -> (StatusCode, Value) {
@@ -198,4 +251,53 @@ pub fn random_phone() -> String {
 
 pub fn error_code(body: &Value) -> &str {
     body["error"]["code"].as_str().unwrap_or("<none>")
+}
+
+/// A ~2 km hexagon around a point (GeoJSON `[lng, lat]` ring).
+pub fn hexagon(lat: f64, lng: f64, km: f64) -> Value {
+    let ring: Vec<[f64; 2]> = (0..=6)
+        .map(|i| {
+            let a = f64::from(i % 6 * 60 + 30).to_radians();
+            [
+                lng + km * a.cos() / (111.32 * lat.to_radians().cos()),
+                lat + km * a.sin() / 110.57,
+            ]
+        })
+        .collect();
+    json!({ "type": "Polygon", "coordinates": [ring] })
+}
+
+pub fn store_body(code: &str, lat: f64, lng: f64, km: f64) -> Value {
+    json!({
+        "code": code,
+        "name": format!("Store {code}"),
+        "address": "Test address, Bengaluru",
+        "location": { "lat": lat, "lng": lng },
+        "serviceArea": hexagon(lat, lng, km),
+        "isActive": true,
+    })
+}
+
+/// Creates a store around Indiranagar, Bengaluru; returns its id.
+pub async fn create_store(app: &TestApp, admin_token: &str, code: &str) -> Value {
+    let (status, body) = app
+        .request(
+            Method::POST,
+            "/v1/admin/stores",
+            Some(admin_token),
+            Some(store_body(code, 12.9719, 77.6412, 2.0)),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create store: {body}");
+    body["id"].clone()
+}
+
+/// Signs in a fresh user and promotes them to ADMIN; returns their token.
+pub async fn admin_token(app: &TestApp) -> String {
+    let phone = random_phone();
+    let (token, _) = app.signed_in(&phone).await;
+    backend::services::user_service::promote_admin_by_phone(&app.state, &phone)
+        .await
+        .expect("promote");
+    token
 }

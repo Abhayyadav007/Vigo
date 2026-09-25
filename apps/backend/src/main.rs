@@ -3,13 +3,13 @@ use backend::{app, config::Config, services::user_service, state::AppState};
 use tokio::{net::TcpListener, signal};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
-const USAGE: &str = "usage: backend [serve | promote-admin <+91XXXXXXXXXX>]";
+const USAGE: &str = "usage: backend [serve | promote-admin <+91XXXXXXXXXX> | seed-demo]";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // A missing .env is fine; real deployments set env vars directly.
-    let _ = dotenvy::dotenv();
-    let config = Config::from_env()?;
+    let env_file = dotenvy::dotenv().ok();
+    let config = Config::from_env(env_file.as_deref().and_then(std::path::Path::parent))?;
     init_tracing(&config);
 
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -21,6 +21,7 @@ async fn main() -> anyhow::Result<()> {
     {
         [] | ["serve"] => serve(config).await,
         ["promote-admin", phone] => promote_admin(config, phone).await,
+        ["seed-demo"] => seed_demo(config).await,
         _ => anyhow::bail!(USAGE),
     }
 }
@@ -48,6 +49,18 @@ async fn promote_admin(config: Config, phone: &str) -> anyhow::Result<()> {
         .await
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     println!("{} ({}) is now ADMIN", user.phone, user.id);
+    Ok(())
+}
+
+/// Loads demo stores, catalog and stock (idempotent). Refused in production.
+async fn seed_demo(config: Config) -> anyhow::Result<()> {
+    anyhow::ensure!(!config.is_production(), "seed-demo is for development only");
+    let state = AppState::connect(config).await?;
+    sqlx::raw_sql(include_str!("../seeds/demo.sql"))
+        .execute(&state.db)
+        .await
+        .context("running seeds/demo.sql")?;
+    println!("demo data loaded: 2 Bengaluru stores, 6 categories, 24 products");
     Ok(())
 }
 

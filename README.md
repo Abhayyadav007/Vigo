@@ -24,6 +24,15 @@ pnpm --filter @vigo/backend dev             # http://localhost:8080/healthz (run
 pnpm --filter @vigo/web-admin dev           # http://localhost:5173
 ```
 
+### Demo data
+
+```sh
+cargo run -p backend -- seed-demo   # 2 Bengaluru dark stores, 6 categories, 24 products, stock
+```
+
+Idempotent. `EXPO_PUBLIC_DEV_LOCATION` in `.env.example` puts the customer app inside
+the Indiranagar store's area so the catalog shows up without real GPS.
+
 ### First admin
 
 New accounts are always `CUSTOMER`. Sign in once (any app), then promote yourself:
@@ -32,7 +41,17 @@ New accounts are always `CUSTOMER`. Sign in once (any app), then promote yoursel
 cargo run -p backend -- promote-admin +919876543210
 ```
 
-After that, assign `PICKER` / `RIDER` / `ADMIN` from web-admin → Staff. Each app only
+After that, assign `PICKER` / `RIDER` / `ADMIN` from web-admin → Staff (pickers and
+riders must be assigned to a store).
+
+### Catalog (web-admin)
+
+1. **Stores:** place the store on the map and draw its delivery area (or generate a
+   hexagon of N km around it). Areas must be inside India and 0.05–150 km².
+2. **Categories**, then **Products:** prices are entered in ₹ and stored as paise;
+   selling price can't exceed MRP. Images (JPEG/PNG/WebP ≤ 5 MB) go to `MEDIA_DIR`.
+3. **Inventory:** per store, set quantity, bin location, optional store price, and
+   availability. Customers only see products their serving store carries. Each app only
 admits its own role (customer app → CUSTOMER, picker → PICKER, rider → RIDER, admin → ADMIN).
 
 ### Mobile apps
@@ -63,7 +82,7 @@ pnpm build
 
 # End-to-end (needs db:up, emulators and the backend running as above)
 pnpm e2e:auth                                  # API: phone OTP -> sync -> roles
-pnpm --filter @vigo/web-admin e2e              # Playwright: admin login + role assignment
+pnpm --filter @vigo/web-admin e2e              # Playwright: admin login, roles, catalog setup
 ```
 
 After changing any SQL in `apps/backend/src/repositories`, refresh the offline cache

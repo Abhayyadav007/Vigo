@@ -148,7 +148,7 @@ async fn customers_cannot_use_admin_endpoints(db: PgPool) {
     assert_eq!(error_code(&body), "FORBIDDEN");
 }
 
-async fn admin(app: &TestApp) -> (String, serde_json::Value) {
+pub async fn admin(app: &TestApp) -> (String, serde_json::Value) {
     let phone = random_phone();
     let (token, _) = app.signed_in(&phone).await;
     let user = user_service::promote_admin_by_phone(&app.state, &phone)
@@ -169,7 +169,7 @@ async fn role_change_takes_effect_immediately(db: PgPool) {
     let (_, me) = app.get("/v1/auth/me", Some(&rider_token)).await;
     assert_eq!(me["role"], "CUSTOMER");
 
-    let store_id = uuid::Uuid::new_v4();
+    let store_id = common::create_store(&app, &admin_token, "BLR-TEST-01").await;
     let uri = format!("/v1/admin/users/{}/role", rider["id"].as_str().unwrap());
     let (status, updated) = app
         .request(
@@ -181,7 +181,7 @@ async fn role_change_takes_effect_immediately(db: PgPool) {
         .await;
     assert_eq!(status, StatusCode::OK, "{updated}");
     assert_eq!(updated["role"], "RIDER");
-    assert_eq!(updated["storeId"], store_id.to_string());
+    assert_eq!(updated["storeId"], store_id);
 
     // Cache was invalidated, so the new role is visible without waiting.
     let (_, me) = app.get("/v1/auth/me", Some(&rider_token)).await;
@@ -242,7 +242,7 @@ async fn role_update_input_errors_use_the_json_error_shape(db: PgPool) {
             Method::PATCH,
             &missing,
             Some(&token),
-            Some(json!({ "role": "RIDER" })),
+            Some(json!({ "role": "ADMIN" })),
         )
         .await;
     assert_eq!(status, StatusCode::NOT_FOUND, "{res}");

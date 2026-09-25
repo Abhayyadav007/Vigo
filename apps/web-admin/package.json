@@ -16,7 +16,11 @@
     "@vigo/types": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "firebase": "catalog:"
+    "firebase": "catalog:",
+    "react-router": "catalog:",
+    "leaflet": "catalog:",
+    "react-leaflet": "catalog:",
+    "@geoman-io/leaflet-geoman-free": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",
@@ -25,6 +29,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "@playwright/test": "catalog:",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "@types/leaflet": "catalog:"
   }
 }

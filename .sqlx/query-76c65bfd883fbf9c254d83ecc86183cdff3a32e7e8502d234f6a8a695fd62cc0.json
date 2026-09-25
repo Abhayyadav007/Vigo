@@ -1,0 +1,107 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id AS product_id, p.name AS product_name, p.brand, p.unit_label, p.barcode,\n               p.image_urls, c.name AS category_name, p.mrp_paise, p.price_paise,\n               true AS \"stocked!\", i.quantity, i.bin_location, i.price_override_paise,\n               i.is_available, i.updated_at AS \"updated_at?\"\n        FROM store_inventory i\n        JOIN products p ON p.id = i.product_id\n        JOIN categories c ON c.id = p.category_id\n        WHERE i.store_id = $1 AND i.product_id = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "product_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "barcode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "image_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "category_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "price_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "stocked!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "bin_location",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "price_override_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 13,
+        "name": "is_available",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at?",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "76c65bfd883fbf9c254d83ecc86183cdff3a32e7e8502d234f6a8a695fd62cc0"
+}

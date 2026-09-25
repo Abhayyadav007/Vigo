@@ -37,3 +37,7 @@ apps/mobile-*/firebase/*.json
 # Playwright
 apps/web-admin/test-results/
 apps/web-admin/playwright-report/
+
+# Local media uploads (MEDIA_DIR)
+/media/
+apps/backend/media/

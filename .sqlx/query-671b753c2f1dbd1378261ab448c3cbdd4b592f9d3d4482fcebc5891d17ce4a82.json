@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id, p.category_id, c.name AS category_name, p.name, p.slug, p.brand,\n               p.description, p.unit_label, p.barcode, p.mrp_paise, p.price_paise,\n               p.image_urls, p.is_active, p.created_at, p.updated_at\n        FROM products p JOIN categories c ON c.id = p.category_id\n        WHERE p.id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "category_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "category_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "barcode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "price_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "image_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 12,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "671b753c2f1dbd1378261ab448c3cbdd4b592f9d3d4482fcebc5891d17ce4a82"
+}

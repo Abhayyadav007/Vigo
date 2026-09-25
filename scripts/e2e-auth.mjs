@@ -79,9 +79,18 @@ if (process.env.PROMOTE_CMD !== "skip") {
   const list = await api(`/v1/admin/users?phone=${suffix}`, adminToken);
   check("promoted admin can list users", list.status === 200 && list.body.total === 2, JSON.stringify(list));
 
-  const role = await api(`/v1/admin/users/${sync.body.id}/role`, adminToken, {
+  // Riders belong to a store (the demo seed provides some).
+  const stores = await api("/v1/admin/stores?limit=1", adminToken);
+  const storeId = stores.body.items?.[0]?.id;
+  check("a store exists to assign the rider to", !!storeId, "run `backend seed-demo` first");
+  const noStore = await api(`/v1/admin/users/${sync.body.id}/role`, adminToken, {
     method: "PATCH",
     body: JSON.stringify({ role: "RIDER" }),
+  });
+  check("RIDER without a store is rejected", noStore.status === 422, JSON.stringify(noStore));
+  const role = await api(`/v1/admin/users/${sync.body.id}/role`, adminToken, {
+    method: "PATCH",
+    body: JSON.stringify({ role: "RIDER", storeId }),
   });
   check("admin assigns RIDER", role.status === 200 && role.body.role === "RIDER", JSON.stringify(role));
   const after = await api("/v1/auth/me", customerToken);

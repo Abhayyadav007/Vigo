@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO dark_stores (code, name, address, location, service_area, is_active)\n        VALUES ($1, $2, $3,\n                ST_SetSRID(ST_MakePoint($5, $4), 4326)::geography,\n                ST_GeomFromGeoJSON($6::jsonb::text)::geography,\n                $7)\n        RETURNING id, code, name, address,\n                  ST_Y(location::geometry) AS \"lat!\", ST_X(location::geometry) AS \"lng!\",\n                  ST_AsGeoJSON(service_area, 7)::jsonb AS \"service_area!: Json<GeoJsonPolygon>\",\n                  ST_Area(service_area) AS \"area_sq_m!\",\n                  is_active, created_at, updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "lat!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "lng!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "service_area!: Json<GeoJsonPolygon>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 7,
+        "name": "area_sq_m!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8",
+        "Jsonb",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "523df2f14e1de95d5332359371501c93111db03645a48ac2e63ac67f2bf2fb09"
+}

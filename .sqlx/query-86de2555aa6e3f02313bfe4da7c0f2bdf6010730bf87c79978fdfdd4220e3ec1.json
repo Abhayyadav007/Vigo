@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, code, name, address,\n               ST_Y(location::geometry) AS \"lat!\", ST_X(location::geometry) AS \"lng!\",\n               ST_AsGeoJSON(service_area, 7)::jsonb AS \"service_area!: Json<GeoJsonPolygon>\",\n               ST_Area(service_area) AS \"area_sq_m!\",\n               is_active, created_at, updated_at\n        FROM dark_stores WHERE id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "lat!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "lng!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "service_area!: Json<GeoJsonPolygon>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 7,
+        "name": "area_sq_m!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "86de2555aa6e3f02313bfe4da7c0f2bdf6010730bf87c79978fdfdd4220e3ec1"
+}

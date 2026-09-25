@@ -119,3 +119,26 @@ impl IntoResponse for AppError {
 }
 
 pub type AppResult<T> = Result<T, AppError>;
+
+/// How to report a violated Postgres constraint.
+#[derive(Debug, Clone, Copy)]
+pub enum On {
+    /// 409: duplicate of something that exists (unique constraints).
+    Conflict,
+    /// 422: the request refers to something invalid (FKs, checks).
+    Invalid,
+}
+
+/// Maps known constraint violations to client errors; anything else stays a 500.
+pub fn map_constraint(e: sqlx::Error, known: &[(&str, On, &str)]) -> AppError {
+    if let sqlx::Error::Database(db) = &e
+        && let Some(name) = db.constraint()
+        && let Some((_, on, message)) = known.iter().find(|(c, ..)| *c == name)
+    {
+        return match on {
+            On::Conflict => AppError::Conflict((*message).to_owned()),
+            On::Invalid => AppError::Validation((*message).to_owned()),
+        };
+    }
+    e.into()
+}

@@ -1,4 +1,10 @@
-use std::{env, net::SocketAddr, str::FromStr, time::Duration};
+use std::{
+    env,
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    str::FromStr,
+    time::Duration,
+};
 
 use anyhow::{Context, bail};
 
@@ -35,11 +41,15 @@ pub struct Config {
     pub session_cache_ttl: Duration,
     pub cors_allowed_origins: Vec<String>,
     pub request_timeout: Duration,
+    /// Where uploaded images are stored (local media store).
+    pub media_dir: PathBuf,
 }
 
 impl Config {
     /// Reads configuration from the process environment (and `.env` if present).
-    pub fn from_env() -> anyhow::Result<Self> {
+    /// Relative paths (`MEDIA_DIR`) resolve against `base_dir`: the directory of
+    /// the loaded `.env`, so they don't depend on where the binary was started.
+    pub fn from_env(base_dir: Option<&Path>) -> anyhow::Result<Self> {
         let host = var_or("HOST", "0.0.0.0");
         let port: u16 = parse_or("PORT", 8080)?;
         let addr = format!("{host}:{port}")
@@ -70,6 +80,13 @@ impl Config {
                 .map(String::from)
                 .collect(),
             request_timeout: Duration::from_secs(parse_or("REQUEST_TIMEOUT_SECS", 15)?),
+            media_dir: {
+                let dir = PathBuf::from(var_or("MEDIA_DIR", "media"));
+                match base_dir {
+                    Some(base) if dir.is_relative() => base.join(dir),
+                    _ => dir,
+                }
+            },
         })
     }
 

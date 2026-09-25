@@ -9,7 +9,7 @@ edition = "2024"
 rust-version = "1.90"
 
 [workspace.dependencies]
-axum = { version = "0.8.9", features = ["macros"] }
+axum = { version = "0.8.9", features = ["macros", "multipart"] }
 tokio = { version = "1", features = ["full"] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.7", features = [
@@ -20,6 +20,8 @@ tower-http = { version = "0.7", features = [
   "compression-br",
   "timeout",
   "util",
+  "fs",
+  "set-header",
 ] }
 sqlx = { version = "0.8", default-features = false, features = [
   "runtime-tokio-rustls",

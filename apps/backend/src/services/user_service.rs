@@ -5,7 +5,10 @@ use crate::{
     error::{AppError, AppResult},
     extractors::auth_user::AuthUser,
     models::user::User,
-    repositories::users::{self, UserFilter},
+    repositories::{
+        stores,
+        users::{self, UserFilter},
+    },
     services::auth_service,
     state::AppState,
 };
@@ -28,8 +31,21 @@ pub async fn change_role(
             "admins cannot change their own role".into(),
         ));
     }
-    // TODO(phase-3): require an existing dark store for PICKER/RIDER once
-    // `dark_stores` exists, and clear store_id for CUSTOMER.
+    // Store staff work at exactly one store; customers and admins have none.
+    let store_id = match role {
+        Role::Picker | Role::Rider => {
+            let id = store_id.ok_or_else(|| {
+                AppError::Validation(format!("a {} must be assigned to a store", role.as_str()))
+            })?;
+            if !stores::is_active(&state.db, id).await? {
+                return Err(AppError::Validation(
+                    "store does not exist or is inactive".into(),
+                ));
+            }
+            Some(id)
+        }
+        Role::Customer | Role::Admin => None,
+    };
     let user = users::update_role(&state.db, user_id, role, store_id)
         .await?
         .ok_or(AppError::NotFound("user"))?;

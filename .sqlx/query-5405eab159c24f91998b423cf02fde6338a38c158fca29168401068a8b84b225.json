@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH p AS (SELECT ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography AS pt)\n        SELECT s.id, s.code, s.name, ST_Distance(s.location, p.pt) AS \"distance_m!\"\n        FROM dark_stores s, p\n        WHERE s.is_active AND ST_Covers(s.service_area, p.pt)\n        ORDER BY s.location <-> p.pt\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "distance_m!",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "5405eab159c24f91998b423cf02fde6338a38c158fca29168401068a8b84b225"
+}

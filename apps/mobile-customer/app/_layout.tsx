@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { apiClient, firebaseAuth } from "../lib/api";
+import { DeliveryProvider } from "../lib/location";
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
@@ -33,14 +34,18 @@ function RootStack() {
     );
   }
   const signedIn = state.status === "signedIn";
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
+  const stack = (
+    <Stack screenOptions={{ headerShown: false, headerTintColor: colors.brand, headerBackButtonDisplayMode: "minimal" }}>
       <Stack.Protected guard={signedIn}>
-        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="category/[id]" />
+        <Stack.Screen name="product/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />
       </Stack.Protected>
     </Stack>
   );
+  // Location/serviceability is only resolved once signed in.
+  return signedIn ? <DeliveryProvider>{stack}</DeliveryProvider> : stack;
 }

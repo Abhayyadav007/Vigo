@@ -6,6 +6,7 @@ use crate::{error::AppError, handlers, state::AppState};
 
 mod admin;
 mod auth;
+mod customer;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -15,8 +16,9 @@ pub fn router() -> Router<AppState> {
 }
 
 fn v1() -> Router<AppState> {
-    // TODO(phase-3): customer, picker and rider routers; TODO(phase-5): ws.
+    // TODO(phase-5): picker router + ws; TODO(phase-6): rider router.
     Router::new()
         .nest("/auth", auth::router())
+        .nest("/customer", customer::router())
         .nest("/admin", admin::router())
 }

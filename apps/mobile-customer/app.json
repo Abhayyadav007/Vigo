@@ -15,6 +15,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Vigo uses your location to find the nearest store that can deliver to you."
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       [
@@ -26,9 +32,6 @@
           }
         }
       ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    ]
   }
 }

@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id, p.category_id, p.name, p.brand, p.unit_label, p.image_urls, p.mrp_paise,\n               coalesce(i.price_override_paise, p.price_paise) AS \"price_paise!\",\n               i.quantity, p.description\n        FROM store_inventory i\n        JOIN dark_stores s ON s.id = i.store_id AND s.is_active\n        JOIN products p ON p.id = i.product_id AND p.is_active\n        JOIN categories c ON c.id = p.category_id AND c.is_active\n        WHERE i.store_id = $1 AND i.product_id = $2 AND i.is_available\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "category_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "image_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "price_paise!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "description",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      false,
+      true
+    ]
+  },
+  "hash": "0dbd4a63ebcee3f22fed0c046f35c324b058d3842846f1908a58ee61ad087375"
+}

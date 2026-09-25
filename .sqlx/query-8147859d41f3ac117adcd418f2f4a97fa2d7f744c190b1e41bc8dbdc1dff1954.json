@@ -1,0 +1,116 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id, p.category_id, c.name AS category_name, p.name, p.slug, p.brand,\n               p.description, p.unit_label, p.barcode, p.mrp_paise, p.price_paise,\n               p.image_urls, p.is_active, p.created_at, p.updated_at,\n               count(*) OVER () AS \"total!\"\n        FROM products p JOIN categories c ON c.id = p.category_id\n        WHERE ($1::text IS NULL\n               OR p.barcode = $1\n               OR (p.name || ' ' || coalesce(p.brand, '')) ILIKE '%' || $1 || '%'\n               OR word_similarity($1, p.name || ' ' || coalesce(p.brand, '')) >= 0.4)\n          AND ($2::uuid IS NULL OR p.category_id = $2)\n          AND ($3::bool IS NULL OR p.is_active = $3)\n        ORDER BY p.name, p.id\n        LIMIT $4 OFFSET $5\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "category_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "category_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "barcode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "price_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "image_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 12,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid",
+        "Bool",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "8147859d41f3ac117adcd418f2f4a97fa2d7f744c190b1e41bc8dbdc1dff1954"
+}
