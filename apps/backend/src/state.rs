@@ -3,7 +3,15 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
-use crate::{auth::FirebaseVerifier, cache, config::Config, services::media_service::MediaStore};
+use crate::{
+    auth::FirebaseVerifier,
+    cache,
+    config::Config,
+    services::{
+        media_service::MediaStore,
+        payments::{CashOnDelivery, Payments, Razorpay},
+    },
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -12,6 +20,7 @@ pub struct AppState {
     pub redis: deadpool_redis::Pool,
     pub verifier: Arc<FirebaseVerifier>,
     pub media: Arc<MediaStore>,
+    pub payments: Arc<Payments>,
 }
 
 impl AppState {
@@ -58,7 +67,19 @@ impl AppState {
             dir: config.media_dir.clone(),
         };
 
+        let payments = Payments {
+            cod: CashOnDelivery,
+            razorpay: config
+                .razorpay
+                .clone()
+                .map(|(key, secret)| Razorpay::new(key, secret)),
+        };
+        if payments.razorpay.is_none() {
+            tracing::info!("Razorpay not configured: online payments disabled (COD only)");
+        }
+
         Ok(Self {
+            payments: Arc::new(payments),
             config: Arc::new(config),
             db,
             redis,

@@ -1,0 +1,85 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE addresses SET label = $3, line1 = $4, line2 = $5, landmark = $6, city = $7,\n            pincode = $8, location = ST_SetSRID(ST_MakePoint($10, $9), 4326)::geography\n        WHERE id = $2 AND user_id = $1\n        RETURNING id, user_id, label, line1, line2, landmark, city, pincode,\n                  ST_Y(location::geometry) AS \"lat!\", ST_X(location::geometry) AS \"lng!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "line1",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "line2",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "landmark",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "pincode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "lat!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 9,
+        "name": "lng!",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "3539dcd3a43f1932133704909f2066112d0fc9e762dc3bfe2bd53734c638fa61"
+}

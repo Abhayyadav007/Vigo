@@ -3,6 +3,7 @@ import { colors, EmptyState } from "@vigo/ui";
 import { useDeferredValue, useState } from "react";
 import { TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CartBar } from "../../components/CartControls";
 import { ProductGrid } from "../../components/ProductGrid";
 import { useStore } from "../../lib/location";
 
@@ -43,6 +44,7 @@ export default function Search() {
           )
         }
       />
+      <CartBar />
     </View>
   );
 }

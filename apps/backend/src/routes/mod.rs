@@ -7,6 +7,7 @@ use crate::{error::AppError, handlers, state::AppState};
 mod admin;
 mod auth;
 mod customer;
+mod payments;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -21,4 +22,5 @@ fn v1() -> Router<AppState> {
         .nest("/auth", auth::router())
         .nest("/customer", customer::router())
         .nest("/admin", admin::router())
+        .nest("/payments", payments::router())
 }

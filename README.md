@@ -72,6 +72,18 @@ Set `FIREBASE_PROJECT_ID` to your project, remove `FIREBASE_AUTH_EMULATOR_HOST`,
 `VITE_FIREBASE_AUTH_EMULATOR_HOST` and `EXPO_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST`, and
 fill in the `VITE_FIREBASE_*` web config. Enable Phone sign-in in the Firebase console.
 
+### Orders & payments
+
+Checkout reserves stock atomically in Redis (Lua, all lines or nothing, 10-minute
+hold), then commits it in Postgres when the order is confirmed: immediately for
+cash on delivery, or on Razorpay's `payment.captured` webhook for online payment.
+Unpaid reservations are released by a background sweeper. `POST /v1/customer/checkout`
+requires an `Idempotency-Key` header, so retries never double-order.
+
+Online payment is off unless `RAZORPAY_KEY_ID` and `RAZORPAY_WEBHOOK_SECRET` are set.
+The Razorpay order-creation call is still a stub; the webhook
+(`POST /v1/payments/razorpay/webhook`) verifies signatures and is idempotent per event.
+
 ## Checks
 
 ```sh
@@ -82,6 +94,7 @@ pnpm build
 
 # End-to-end (needs db:up, emulators and the backend running as above)
 pnpm e2e:auth                                  # API: phone OTP -> sync -> roles
+pnpm e2e:orders                                # API: address -> cart -> COD checkout -> cancel
 pnpm --filter @vigo/web-admin e2e              # Playwright: admin login, roles, catalog setup
 ```
 

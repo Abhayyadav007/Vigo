@@ -1,7 +1,8 @@
 import { discountPercent, formatPaise, resolveMediaUrl, useApiBaseUrl, useCatalogProduct } from "@vigo/api-client";
-import { Button, colors, EmptyState } from "@vigo/ui";
+import { colors, EmptyState } from "@vigo/ui";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Image, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { AddToCart } from "../../components/CartControls";
 import { DeliveryGate } from "../../components/DeliveryGate";
 import { useStore } from "../../lib/location";
 
@@ -36,7 +37,7 @@ function ProductDetail() {
   return (
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: true, title: "" }} />
-      <ScrollView contentContainerClassName="gap-4 pb-32">
+      <ScrollView contentContainerClassName="gap-4 pb-8">
         {images.length > 0 ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
             {images.map((uri) => (
@@ -66,9 +67,12 @@ function ProductDetail() {
           {p.description ? <Text className="mt-2 text-base leading-6 text-ink">{p.description}</Text> : null}
         </View>
       </ScrollView>
-      <View className="absolute bottom-0 left-0 right-0 border-t border-line bg-background p-4 pb-8">
-        {/* TODO(phase-4): add to cart. */}
-        <Button title={p.inStock ? "Add to cart — coming soon" : "Out of stock"} onPress={() => undefined} disabled />
+      <View className="gap-3 border-t border-line bg-background p-4 pb-8">
+        {p.inStock ? (
+          <AddToCart product={p} size="md" />
+        ) : (
+          <Text className="text-center text-base font-semibold text-muted">Out of stock</Text>
+        )}
       </View>
     </View>
   );

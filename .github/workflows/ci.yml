@@ -195,6 +195,7 @@ jobs:
         run: |
           ./target/debug/backend seed-demo
           node scripts/e2e-auth.mjs http://localhost:8080
+          node scripts/e2e-orders.mjs http://localhost:8080
 
       - name: Browser e2e (web-admin)
         run: |

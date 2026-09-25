@@ -35,3 +35,17 @@ export {
   useCatalogProducts,
   useServiceability,
 } from "./hooks/useCatalog";
+export {
+  isOrderActive,
+  newIdempotencyKey,
+  orderKeys,
+  useAddresses,
+  useCancelOrder,
+  useCart,
+  useCheckout,
+  useDeleteAddress,
+  useOrder,
+  useOrders,
+  useSaveAddress,
+  useSetCartItem,
+} from "./hooks/useOrders";

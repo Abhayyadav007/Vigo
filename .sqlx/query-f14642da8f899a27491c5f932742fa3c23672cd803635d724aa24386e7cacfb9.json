@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT a.id, a.user_id, a.label, a.line1, a.line2, a.landmark, a.city, a.pincode,\n               ST_Y(a.location::geometry) AS \"lat!\", ST_X(a.location::geometry) AS \"lng!\",\n               (SELECT s.id FROM dark_stores s\n                WHERE s.is_active AND ST_Covers(s.service_area, a.location)\n                ORDER BY s.location <-> a.location LIMIT 1) AS serving_store_id\n        FROM addresses a\n        WHERE a.user_id = $1\n        ORDER BY a.updated_at DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "line1",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "line2",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "landmark",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "pincode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "lat!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 9,
+        "name": "lng!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 10,
+        "name": "serving_store_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "f14642da8f899a27491c5f932742fa3c23672cd803635d724aa24386e7cacfb9"
+}

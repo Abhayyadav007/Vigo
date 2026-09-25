@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH cart AS (\n            INSERT INTO carts (user_id, store_id) VALUES ($1, $2)\n            ON CONFLICT (user_id, store_id) DO UPDATE SET updated_at = now()\n            RETURNING id\n        ),\n        removed AS (\n            DELETE FROM cart_items\n            WHERE $4 = 0 AND cart_id = (SELECT id FROM cart) AND product_id = $3\n        )\n        INSERT INTO cart_items (cart_id, product_id, quantity)\n        SELECT id, $3, $4 FROM cart WHERE $4 > 0\n        ON CONFLICT (cart_id, product_id) DO UPDATE SET quantity = EXCLUDED.quantity\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "546d384e7cdb36a87aef4b07ac7965a8aefb428071f0839480e28085ac65f13a"
+}

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { randomInt } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 
 export const EMULATOR = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "localhost:9099"}`;
@@ -11,8 +12,12 @@ export function backendCli(...args: string[]) {
   execFileSync(BACKEND[0]!, [...BACKEND.slice(1), ...args], { cwd: "../..", stdio: "inherit" });
 }
 
-/** A unique 10-digit Indian mobile starting with `prefix`. */
-export const uniquePhone = (prefix: string) => `${prefix}${String(Date.now()).slice(-8)}`;
+/**
+ * A random 10-digit Indian mobile starting with `prefix`. Random, not
+ * time-based: tests run in parallel and must never share a number (they'd
+ * read each other's OTPs).
+ */
+export const uniquePhone = (prefix: string) => `${prefix}${randomInt(0, 100_000_000).toString().padStart(8, "0")}`;
 
 /** Newest OTP the emulator "sent" to this number. */
 export async function latestOtp(phoneE164: string): Promise<string> {

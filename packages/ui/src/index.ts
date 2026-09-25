@@ -7,3 +7,4 @@ export { TextField, type TextFieldProps } from "./TextField";
 export { CategoryTile, type CategoryTileProps } from "./CategoryTile";
 export { EmptyState } from "./EmptyState";
 export { ProductCard, type ProductCardProps } from "./ProductCard";
+export { QuantityStepper, type QuantityStepperProps } from "./QuantityStepper";

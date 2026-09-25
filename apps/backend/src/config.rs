@@ -43,6 +43,10 @@ pub struct Config {
     pub request_timeout: Duration,
     /// Where uploaded images are stored (local media store).
     pub media_dir: PathBuf,
+    /// How long checkout holds stock for an unpaid order.
+    pub reservation_ttl: Duration,
+    /// Razorpay key id + webhook secret. Online payments are off unless both are set.
+    pub razorpay: Option<(String, String)>,
 }
 
 impl Config {
@@ -80,6 +84,16 @@ impl Config {
                 .map(String::from)
                 .collect(),
             request_timeout: Duration::from_secs(parse_or("REQUEST_TIMEOUT_SECS", 15)?),
+            reservation_ttl: Duration::from_secs(parse_or("RESERVATION_TTL_SECS", 600)?),
+            razorpay: match (
+                env::var("RAZORPAY_KEY_ID").ok().filter(|s| !s.is_empty()),
+                env::var("RAZORPAY_WEBHOOK_SECRET")
+                    .ok()
+                    .filter(|s| !s.is_empty()),
+            ) {
+                (Some(key), Some(secret)) => Some((key, secret)),
+                _ => None,
+            },
             media_dir: {
                 let dir = PathBuf::from(var_or("MEDIA_DIR", "media"));
                 match base_dir {

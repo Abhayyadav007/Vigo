@@ -11,5 +11,6 @@ pub mod customer;
 pub mod error;
 pub mod geo;
 pub mod health;
+pub mod order;
 pub mod page;
 pub mod store;

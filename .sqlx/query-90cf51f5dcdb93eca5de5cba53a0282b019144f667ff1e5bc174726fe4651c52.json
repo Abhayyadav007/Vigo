@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO order_status_events (order_id, to_status, actor_user_id) VALUES ($1, 'PLACED', $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "90cf51f5dcdb93eca5de5cba53a0282b019144f667ff1e5bc174726fe4651c52"
+}

@@ -4,6 +4,7 @@ import { colors, ProductCard } from "@vigo/ui";
 import { router } from "expo-router";
 import type { ReactElement } from "react";
 import { ActivityIndicator, FlatList, View } from "react-native";
+import { AddToCart } from "./CartControls";
 
 export interface ProductGridProps {
   products: CatalogProduct[];
@@ -21,7 +22,7 @@ export function ProductGrid({ products, onEndReached, loadingMore, header, empty
       keyExtractor={(p) => p.id}
       numColumns={2}
       columnWrapperClassName="gap-3"
-      contentContainerClassName="gap-3 px-4 pb-8"
+      contentContainerClassName="gap-3 px-4 pb-24"
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       onEndReached={onEndReached}
@@ -42,6 +43,7 @@ export function ProductGrid({ products, onEndReached, loadingMore, header, empty
               mrp={formatPaise(p.mrpPaise)}
               badge={off > 0 ? `${off}% OFF` : undefined}
               inStock={p.inStock}
+              action={<AddToCart product={p} />}
               onPress={() => router.push({ pathname: "/product/[id]", params: { id: p.id } })}
             />
           </View>

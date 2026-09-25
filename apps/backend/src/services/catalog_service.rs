@@ -3,6 +3,7 @@
 use uuid::Uuid;
 
 use crate::{
+    cache::inventory as cache_inventory,
     dto::catalog::{CategoryRequest, InventoryRequest, ProductRequest},
     error::{AppError, AppResult, On, map_constraint},
     models::catalog::{Category, InventoryRow, Product},
@@ -200,7 +201,6 @@ pub async fn set_inventory(
             rupees(mrp)
         )));
     }
-    // TODO(phase-4): mirror quantity changes into the Redis availability cache.
     let input = InventoryInput {
         quantity: req.quantity,
         bin_location: req.bin_location.as_deref().map(str::trim),
@@ -208,6 +208,13 @@ pub async fn set_inventory(
         is_available: req.is_available,
     };
     inventory::upsert(&state.db, store_id, product_id, &input).await?;
+    // Keep the Redis stock mirror in step; reservations (`held`) are separate.
+    if let Err(error) =
+        cache_inventory::set_stock(&state.redis, store_id, product_id, req.quantity).await
+    {
+        // TODO(phase-8): the reconciliation job resyncs the mirror from Postgres.
+        tracing::error!(%error, %store_id, %product_id, "updating Redis stock mirror failed");
+    }
     inventory::find(&state.db, store_id, product_id)
         .await?
         .ok_or(AppError::NotFound("inventory"))

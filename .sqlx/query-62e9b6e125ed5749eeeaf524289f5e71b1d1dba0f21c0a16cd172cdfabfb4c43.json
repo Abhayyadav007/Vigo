@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT product_id, name, brand, unit_label, image_url, quantity, unit_price_paise,\n               unit_mrp_paise, picked_quantity\n        FROM order_items WHERE order_id = $1 ORDER BY name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "product_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "unit_price_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "unit_mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "picked_quantity",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "62e9b6e125ed5749eeeaf524289f5e71b1d1dba0f21c0a16cd172cdfabfb4c43"
+}
