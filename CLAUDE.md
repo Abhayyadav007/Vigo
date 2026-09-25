@@ -34,6 +34,8 @@ cargo test -p backend --lib firebase                   # unit tests in one modul
 cargo test -p backend --test auth role_change          # one integration test (needs db:up)
 cargo test -p backend --test catalog serviceability    # catalog/stores/inventory/uploads tests
 cargo test -p backend --test orders concurrent         # checkout/overselling/payments/state machine
+cargo test -p backend --test picker websocket          # picking flow + a real WebSocket session (TestApp::serve)
+pnpm e2e:picker                                        # picking + live WS against a running backend
 pnpm e2e:orders                                        # API purchase flow against a running backend (needs seed-demo)
 pnpm --filter @vigo/api-client test                    # node:test unit tests (money/phone/media helpers)
 pnpm --filter @vigo/api-client lint                    # ESLint for one package
@@ -79,6 +81,17 @@ Layering is strict:
 - **Status changes** go only through `order_service` (`transition`, `confirm`, `cancel`). Each one is a compare-and-set in SQL (`status = ANY(predecessors)`), writes `order_status_events`, and publishes an `OrderStatusChanged` event to Redis channels `orders:{id}` and `stores:{storeId}:orders`. The legal transitions are `OrderStatus::can_transition_to` in `models/order.rs`.
 - **Payments.** The `PaymentProvider` trait lives in `services/payments/`, and `Payments { cod, razorpay: Option }` sits on `AppState`. The Razorpay webhook verifies HMAC-SHA256 in constant time and dedupes on `payment_events(provider, event_id)`.
 - **Checkout requests.** Checkout requires `Idempotency-Key`; orders are unique on `(user_id, idempotency_key)`. Orders snapshot prices, names and the address, so later catalog edits don't change them.
+
+**WebSockets** (`ws/`):
+- **Hub.** `PubSubHub` (on `AppState.hub`) holds one Redis Pub/Sub connection per instance. It fans messages out through tokio broadcast channels, ref-counts SUBSCRIBE/UNSUBSCRIBE, and reconnects and resubscribes on its own.
+- **Sessions.** The first client message must be `{"type":"auth","token":…}`, sent within 10s; tokens never go in URLs. The server closes with 4001 (bad token), 4003 (wrong role or store) or 4008 (token expired). It sends `resync` when a client lags. Payloads are the `WsServerMessage` enum from `dto/ws.rs`.
+- **Adding an endpoint.** Add an `Audience` variant that maps an authenticated session to a channel, plus a route in `routes/ws.rs`.
+- **Client side.** `api-client/src/ws.ts` (`openLiveSocket`) reconnects with backoff, refreshes the token after 4008, stops after FORBIDDEN, and emits `resync` after every reconnect. `useLiveEvents(path, onMessage)` wraps it for React.
+
+**Picking** (`services/picker_service.rs`):
+- **Access.** Pickers see only their `store_id`; other stores' orders return 404. Every mutation requires PICKING and `picker_id == me`, and returns codes such as `NOT_YOUR_ORDER` and `ALREADY_CLAIMED`.
+- **Scanning.** A scan is one atomic `UPDATE … picked_quantity + 1 … < quantity`. It answers 422 `SCAN_MISMATCH` or 409 `LINE_COMPLETE` via `AppError::Coded`.
+- **Packing.** Packing re-bills `item_total` to the picked units (the delivery fee stays as charged) and zeroes the shelf for short lines. Cancelling restocks `picked_quantity` when the line was counted, otherwise the full `quantity`.
 
 Map unique/FK violations to client errors with `error::map_constraint(e, &[(constraint_name, On::Conflict|On::Invalid, message)])` instead of letting them 500.
 

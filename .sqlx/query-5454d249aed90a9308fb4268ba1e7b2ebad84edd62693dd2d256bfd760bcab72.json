@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT oi.product_id, oi.name, oi.brand, oi.unit_label, oi.image_url, p.barcode,\n               si.bin_location AS \"bin_location?\", oi.quantity, oi.picked_quantity,\n               oi.unit_price_paise, oi.unit_mrp_paise\n        FROM order_items oi\n        JOIN orders o ON o.id = oi.order_id\n        JOIN products p ON p.id = oi.product_id\n        LEFT JOIN store_inventory si ON si.store_id = o.store_id AND si.product_id = oi.product_id\n        WHERE oi.order_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "product_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "barcode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "bin_location?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "picked_quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "unit_price_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "unit_mrp_paise",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "5454d249aed90a9308fb4268ba1e7b2ebad84edd62693dd2d256bfd760bcab72"
+}

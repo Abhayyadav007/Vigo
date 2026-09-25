@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE orders SET item_total_paise = $2, mrp_total_paise = $3,\n            total_paise = $2 + delivery_fee_paise,\n            bag_count = $4, staging_slot = $5, packed_at = now()\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "58913fca5f59b2e9f407504762257cf663a31978a0bb6514b5f4ff5b5d6ac3a6"
+}

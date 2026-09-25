@@ -34,9 +34,10 @@ function RootStack() {
   }
   const signedIn = state.status === "signedIn";
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, headerTintColor: colors.brand }}>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="order/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />

@@ -26,6 +26,14 @@ pub enum AppError {
     },
     #[error("{0} not found")]
     NotFound(&'static str),
+    /// A client error with a specific machine-readable code, e.g.
+    /// 422 `SCAN_MISMATCH`, so apps can react to the exact case.
+    #[error("{message}")]
+    Coded {
+        status: StatusCode,
+        code: &'static str,
+        message: String,
+    },
     #[error("{0}")]
     Conflict(String),
     #[error("{0}")]
@@ -55,6 +63,7 @@ impl AppError {
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::Forbidden { .. } => StatusCode::FORBIDDEN,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
+            Self::Coded { status, .. } => *status,
             Self::Conflict(_) => StatusCode::CONFLICT,
             Self::ServiceUnavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::Database(sqlx::Error::RowNotFound) => StatusCode::NOT_FOUND,
@@ -69,7 +78,7 @@ impl AppError {
             Self::BadRequest(_) => "BAD_REQUEST",
             Self::Validation(_) => "VALIDATION_FAILED",
             Self::Unauthorized => "UNAUTHORIZED",
-            Self::Forbidden { code, .. } => code,
+            Self::Forbidden { code, .. } | Self::Coded { code, .. } => code,
             Self::NotFound(_) | Self::Database(sqlx::Error::RowNotFound) => "NOT_FOUND",
             Self::Conflict(_) => "CONFLICT",
             Self::ServiceUnavailable(_) => "SERVICE_UNAVAILABLE",

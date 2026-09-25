@@ -43,7 +43,8 @@ impl OrderStatus {
             (self, to),
             (Placed, Confirmed | Cancelled)
                 | (Confirmed, Picking | Cancelled)
-                | (Picking, Packed | Cancelled)
+                // A picker can hand an order back to the queue.
+                | (Picking, Packed | Confirmed | Cancelled)
                 | (Packed, RiderAssigned | Cancelled)
                 // A rider can drop an assignment before pickup.
                 | (RiderAssigned, PickedUp | Packed | Cancelled)
@@ -242,7 +243,7 @@ mod tests {
 
     #[test]
     fn predecessors_match_the_table() {
-        assert_eq!(OrderStatus::predecessors(Confirmed), vec![Placed]);
+        assert_eq!(OrderStatus::predecessors(Confirmed), vec![Placed, Picking]);
         assert_eq!(
             OrderStatus::predecessors(Packed),
             vec![Picking, RiderAssigned]

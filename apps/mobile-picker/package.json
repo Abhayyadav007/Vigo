@@ -31,7 +31,11 @@
     "expo-build-properties": "catalog:",
     "nativewind": "catalog:",
     "react-native-reanimated": "catalog:",
-    "react-native-worklets": "catalog:"
+    "react-native-worklets": "catalog:",
+    "expo-camera": "catalog:",
+    "expo-haptics": "catalog:",
+    "expo-keep-awake": "catalog:",
+    "@expo/vector-icons": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

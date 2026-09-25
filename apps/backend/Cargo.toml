@@ -30,10 +30,12 @@ base64.workspace = true
 hmac.workspace = true
 sha2.workspace = true
 hex.workspace = true
+futures-util = "0.3"
 
 [dev-dependencies]
 http-body-util.workspace = true
 futures = "0.3"
+tokio-tungstenite = "0.30"
 
 [lints]
 workspace = true

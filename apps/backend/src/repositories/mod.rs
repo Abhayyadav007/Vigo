@@ -7,6 +7,7 @@ pub mod categories;
 pub mod health;
 pub mod inventory;
 pub mod orders;
+pub mod picking;
 pub mod products;
 pub mod stores;
 pub mod users;

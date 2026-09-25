@@ -24,6 +24,8 @@ export interface AuthContextValue {
   signOut: () => Promise<void>;
   /** Re-reads the user from the backend (e.g. after a role change). */
   refresh: () => Promise<void>;
+  /** Current Firebase ID token (for WebSocket auth). */
+  getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -92,7 +94,7 @@ export function AuthProvider({ adapter, client, requiredRole, children }: AuthPr
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ state, signOut: () => adapter.signOut(), refresh: sync }),
+    () => ({ state, signOut: () => adapter.signOut(), refresh: sync, getIdToken: adapter.getIdToken }),
     [adapter, state, sync],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

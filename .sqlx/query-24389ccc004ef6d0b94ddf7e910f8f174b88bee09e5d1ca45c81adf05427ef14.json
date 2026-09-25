@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE order_items SET picked_quantity = $3\n        WHERE order_id = $1 AND product_id = $2 AND $3 BETWEEN 0 AND quantity\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "24389ccc004ef6d0b94ddf7e910f8f174b88bee09e5d1ca45c81adf05427ef14"
+}

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE order_items oi SET picked_quantity = coalesce(oi.picked_quantity, 0) + 1\n        FROM products p\n        WHERE oi.order_id = $1 AND p.id = oi.product_id AND p.barcode = $2\n          AND coalesce(oi.picked_quantity, 0) < oi.quantity\n        RETURNING oi.product_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "product_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9ce9e70b9c440a872bc07db4e8f90c68aeebea730c4e388a0ab9f0b5e4766767"
+}

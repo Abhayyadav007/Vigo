@@ -304,7 +304,11 @@ pub async fn transition(
     Ok(prev)
 }
 
-async fn invalid_transition(state: &AppState, order_id: Uuid, to: OrderStatus) -> AppError {
+pub(crate) async fn invalid_transition(
+    state: &AppState,
+    order_id: Uuid,
+    to: OrderStatus,
+) -> AppError {
     match orders::find(&state.db, order_id).await {
         Ok(Some(o)) => AppError::Conflict(format!(
             "order is {} and can't become {}",
@@ -316,7 +320,7 @@ async fn invalid_transition(state: &AppState, order_id: Uuid, to: OrderStatus) -
     }
 }
 
-async fn publish_status(
+pub(crate) async fn publish_status(
     state: &AppState,
     order_id: Uuid,
     from: Option<OrderStatus>,
@@ -452,10 +456,10 @@ pub async fn cancel(
         return Err(invalid_transition(state, order_id, OrderStatus::Cancelled).await);
     };
     let stock_was_taken = prev != OrderStatus::Placed;
+    let restock = restock_quantities(&items);
     if stock_was_taken {
-        for item in &items {
-            orders::increment_stock(&mut tx, order.store_id, item.product_id, item.quantity)
-                .await?;
+        for &(product_id, qty) in &restock {
+            orders::increment_stock(&mut tx, order.store_id, product_id, qty).await?;
         }
     }
     if order.payment_status == PaymentStatus::Paid {
@@ -467,10 +471,9 @@ pub async fn cancel(
     tx.commit().await?;
 
     if stock_was_taken {
-        for item in &items {
+        for &(product_id, qty) in &restock {
             if let Err(error) =
-                inventory::add_stock(&state.redis, order.store_id, item.product_id, item.quantity)
-                    .await
+                inventory::add_stock(&state.redis, order.store_id, product_id, qty).await
             {
                 tracing::error!(%error, %order_id, "restocking Redis mirror failed");
             }
@@ -480,6 +483,17 @@ pub async fn cancel(
     }
     publish_status(state, order_id, Some(prev), OrderStatus::Cancelled).await;
     Ok(())
+}
+
+/// Units that go back on the shelf when a confirmed order is cancelled. Once
+/// a picker has counted a line, only what they found is restocked; units they
+/// marked missing were never there.
+fn restock_quantities(items: &[crate::models::order::OrderItem]) -> Vec<(Uuid, i32)> {
+    items
+        .iter()
+        .map(|i| (i.product_id, i.picked_quantity.unwrap_or(i.quantity)))
+        .filter(|(_, qty)| *qty > 0)
+        .collect()
 }
 
 /// Customer-initiated cancel: own order, and only before picking starts.
