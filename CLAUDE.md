@@ -33,6 +33,8 @@ Single tests:
 cargo test -p backend --lib firebase                   # unit tests in one module
 cargo test -p backend --test auth role_change          # one integration test (needs db:up)
 cargo test -p backend --test catalog serviceability    # catalog/stores/inventory/uploads tests
+cargo test -p backend --test orders concurrent         # checkout/overselling/payments/state machine
+pnpm e2e:orders                                        # API purchase flow against a running backend (needs seed-demo)
 pnpm --filter @vigo/api-client test                    # node:test unit tests (money/phone/media helpers)
 pnpm --filter @vigo/api-client lint                    # ESLint for one package
 pnpm e2e:auth                                          # API e2e (needs emulator + backend running)
@@ -70,6 +72,14 @@ Layering is strict:
 
 **Media.** `services/media_service.rs` has a `MediaStore` enum (only `Local` for now; R2/S3 is a TODO). Uploads are sniffed by magic bytes, stored under `MEDIA_DIR` (relative paths resolve against the `.env` directory) and served at `/media/...` by `ServeDir` in `app.rs`. URLs are stored relative, and clients resolve them with `resolveMediaUrl(url, apiBaseUrl)`.
 
+**Stock, reservations, orders** (`cache/inventory.rs` + `cache/scripts/*.lua`, `services/order_service.rs`):
+- **Redis keys.** Per store, Redis keeps `inv:{store}:stock` (a mirror of Postgres quantity) and `inv:{store}:held` (units reserved), plus one hash per reservation and a `resv_exp` zset. All keys share the `{store}` hash tag, so they stay Cluster-safe. The reservation id is the order id.
+- **Checkout.** `reserve.lua` checks `stock - held >= qty` for every line and then applies all of them, or none. Missing mirror entries are loaded from Postgres with `HSETNX`, then the reservation is retried.
+- **Confirm** (COD immediately, online on the webhook): a Postgres transaction runs conditional `UPDATE … WHERE quantity >= n` for each line, then `commit.lua`. Cancelling from PLACED runs `release.lua`; cancelling after CONFIRMED restocks Postgres and `add_stock`. Admin inventory edits call `set_stock`. The sweeper task in `main.rs` cancels expired unpaid orders and releases orphaned reservations.
+- **Status changes** go only through `order_service` (`transition`, `confirm`, `cancel`). Each one is a compare-and-set in SQL (`status = ANY(predecessors)`), writes `order_status_events`, and publishes an `OrderStatusChanged` event to Redis channels `orders:{id}` and `stores:{storeId}:orders`. The legal transitions are `OrderStatus::can_transition_to` in `models/order.rs`.
+- **Payments.** The `PaymentProvider` trait lives in `services/payments/`, and `Payments { cod, razorpay: Option }` sits on `AppState`. The Razorpay webhook verifies HMAC-SHA256 in constant time and dedupes on `payment_events(provider, event_id)`.
+- **Checkout requests.** Checkout requires `Idempotency-Key`; orders are unique on `(user_id, idempotency_key)`. Orders snapshot prices, names and the address, so later catalog edits don't change them.
+
 Map unique/FK violations to client errors with `error::map_constraint(e, &[(constraint_name, On::Conflict|On::Invalid, message)])` instead of letting them 500.
 
 **Errors.** Everything returns `AppResult<T>`. `AppError` renders `{ "error": { "code", "message" } }`, and 5xx details are logged, never returned. For input, use `extractors::{ValidJson, ValidQuery, PathParam, Pagination}` instead of axum's `Json`/`Query`/`Path`: those keep the JSON error shape and run `validator` rules.
@@ -87,6 +97,7 @@ Integration tests use `#[sqlx::test]`, which gives each test a fresh migrated da
 
 - **`packages/api-client`** is the only path to the backend. `createApiClient({ getIdToken })` attaches the token and retries once with a forced refresh on 401. It turns error bodies into `ApiError { status, code }`. `AuthProvider` (with `requiredRole`) listens to Firebase, calls `POST /v1/auth/sync` and signs out accounts with the wrong role. Firebase SDKs live behind subpath exports (`@vigo/api-client/native` for RN Firebase, `@vigo/api-client/web` for the JS SDK), so each app only bundles its own. The adapter interface uses function-typed properties so methods can be passed unbound.
 - **`packages/ui`**: shared React Native components styled with NativeWind (v4, Tailwind 3). Design tokens live in `src/tokens.json`, which feeds both `theme.ts` and `tailwind-preset.js`; add colours there. Components take callbacks (e.g. `PhoneLoginForm` gets `onSendCode` / `normalizePhone`) and never import Firebase or the API.
+- **Cart** (`useSetCartItem`): updates are optimistic and run in one mutation `scope` per store, so they apply serially; the server response replaces the optimistic guess. Checkout generates one `newIdempotencyKey()` per attempt and keeps it across network retries.
 - **Expo apps** use Expo Router with `Stack.Protected` guards driven by `useAuth().state`. Typed routes are **off** on purpose, because the generated `.expo/types` is gitignored and would make local and CI type checks differ. Tabs come from `expo-router/js-tabs` (the `expo-router` export is deprecated). The customer app resolves location through `lib/location.tsx` (a TanStack query for GPS, then `useServiceability`); screens under `DeliveryGate` can call `useStore()`. `EXPO_PUBLIC_DEV_LOCATION=lat,lng` skips GPS. Firebase config plugins and `expo-build-properties` (`useFrameworks: static`) are in `app.json`; `app.config.ts` adds the Google services file paths.
 - **web-admin**: Vite + React Router 7 (v8 needs a newer React than Expo pins). Firebase phone auth uses an invisible reCAPTCHA. The store map is Leaflet + Geoman, lazy-loaded. Geoman needs a global `L`, so always import Leaflet through `src/lib/leaflet.ts` before `@geoman-io/leaflet-geoman-free`: without it, the whole app renders blank. Editors are split into a loader plus a form keyed by id; the React Compiler lint rules reject copying fetched data into state inside effects.
 

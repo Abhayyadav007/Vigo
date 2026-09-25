@@ -40,6 +40,8 @@ function RootStack() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="category/[id]" />
         <Stack.Screen name="product/[id]" />
+        <Stack.Screen name="order/[id]" />
+        <Stack.Screen name="address/new" options={{ presentation: "modal" }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />

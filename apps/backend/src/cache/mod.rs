@@ -1,5 +1,7 @@
-//! Redis access. Later phases add `inventory` and `geo` submodules.
+//! Redis access. `geo` (rider locations) arrives in phase 6.
 
+pub mod events;
+pub mod inventory;
 pub mod session;
 
 use deadpool_redis::{Pool, redis};

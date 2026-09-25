@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
 export interface ProductCardProps {
@@ -13,6 +14,8 @@ export interface ProductCardProps {
   badge?: string | undefined;
   inStock: boolean;
   onPress: () => void;
+  /** Rendered under the price, e.g. an add-to-cart stepper. */
+  action?: ReactNode;
   testID?: string;
 }
 
@@ -51,6 +54,7 @@ export function ProductCard(p: ProductCardProps) {
         <Text className="text-base font-bold text-ink">{p.price}</Text>
         {p.mrp && p.mrp !== p.price ? <Text className="text-xs text-muted line-through">{p.mrp}</Text> : null}
       </View>
+      {p.action ? <View className="mt-1">{p.action}</View> : null}
     </Pressable>
   );
 }

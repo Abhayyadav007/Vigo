@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id AS product_id, p.name, p.brand, p.unit_label, p.image_urls, ci.quantity,\n               coalesce(i.price_override_paise, p.price_paise) AS \"price_paise!\",\n               p.mrp_paise,\n               coalesce(i.quantity, 0) AS \"stock!\",\n               (i.is_available IS TRUE AND p.is_active AND c.is_active AND s.is_active) AS \"sellable!\"\n        FROM carts ca\n        JOIN cart_items ci ON ci.cart_id = ca.id\n        JOIN products p ON p.id = ci.product_id\n        JOIN categories c ON c.id = p.category_id\n        JOIN dark_stores s ON s.id = ca.store_id\n        LEFT JOIN store_inventory i ON i.store_id = ca.store_id AND i.product_id = p.id\n        WHERE ca.user_id = $1 AND ca.store_id = $2\n        ORDER BY ci.added_at, p.id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "product_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "image_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 5,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "price_paise!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "stock!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "sellable!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "cfa9cf25dbc5c0b5638f6fa965b7d523923a66e5577dc7d391bc9cd59ef3e524"
+}

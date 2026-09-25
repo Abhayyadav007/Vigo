@@ -1,0 +1,172 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, number, user_id, store_id, status AS \"status: OrderStatus\",\n               payment_method AS \"payment_method: PaymentMethod\",\n               payment_status AS \"payment_status: PaymentStatus\",\n               item_total_paise, mrp_total_paise, delivery_fee_paise, total_paise,\n               address AS \"address: Json<AddressSnapshot>\", delivery_otp, gateway_order_id,\n               cancel_reason, created_at, updated_at,\n               (SELECT sum(quantity) FROM order_items oi WHERE oi.order_id = o.id)::int AS \"item_count!\",\n               count(*) OVER () AS \"total!\"\n        FROM orders o\n        WHERE user_id = $1\n        ORDER BY created_at DESC, id\n        LIMIT $2 OFFSET $3\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "number",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "store_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "status: OrderStatus",
+        "type_info": {
+          "Custom": {
+            "name": "order_status",
+            "kind": {
+              "Enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PICKING",
+                "PACKED",
+                "RIDER_ASSIGNED",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "PARTIALLY_FULFILLED"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "payment_method: PaymentMethod",
+        "type_info": {
+          "Custom": {
+            "name": "payment_method",
+            "kind": {
+              "Enum": [
+                "COD",
+                "ONLINE"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "payment_status: PaymentStatus",
+        "type_info": {
+          "Custom": {
+            "name": "payment_status",
+            "kind": {
+              "Enum": [
+                "PENDING",
+                "PAID",
+                "FAILED",
+                "REFUNDED"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "item_total_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "mrp_total_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "delivery_fee_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "total_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "address: Json<AddressSnapshot>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 12,
+        "name": "delivery_otp",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "gateway_order_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "cancel_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 16,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "item_count!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 18,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "3df07aea22938f72d28cd9a06dab4d703f044356be92fed02382c55e165f0e8c"
+}

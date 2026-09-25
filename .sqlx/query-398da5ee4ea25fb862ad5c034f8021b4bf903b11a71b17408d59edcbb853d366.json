@@ -1,0 +1,86 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE orders o SET status = $3, cancel_reason = coalesce($4, o.cancel_reason)\n        FROM (SELECT id, status FROM orders WHERE id = $1 FOR UPDATE) prev\n        WHERE o.id = prev.id AND prev.status = ANY($2)\n        RETURNING prev.status AS \"previous: OrderStatus\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "previous: OrderStatus",
+        "type_info": {
+          "Custom": {
+            "name": "order_status",
+            "kind": {
+              "Enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PICKING",
+                "PACKED",
+                "RIDER_ASSIGNED",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "PARTIALLY_FULFILLED"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "order_status[]",
+            "kind": {
+              "Array": {
+                "Custom": {
+                  "name": "order_status",
+                  "kind": {
+                    "Enum": [
+                      "PLACED",
+                      "CONFIRMED",
+                      "PICKING",
+                      "PACKED",
+                      "RIDER_ASSIGNED",
+                      "PICKED_UP",
+                      "OUT_FOR_DELIVERY",
+                      "DELIVERED",
+                      "CANCELLED",
+                      "PARTIALLY_FULFILLED"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "order_status",
+            "kind": {
+              "Enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PICKING",
+                "PACKED",
+                "RIDER_ASSIGNED",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "PARTIALLY_FULFILLED"
+              ]
+            }
+          }
+        },
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "398da5ee4ea25fb862ad5c034f8021b4bf903b11a71b17408d59edcbb853d366"
+}

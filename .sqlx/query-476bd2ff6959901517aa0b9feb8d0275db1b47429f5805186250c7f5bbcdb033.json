@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, user_id, label, line1, line2, landmark, city, pincode,\n               ST_Y(location::geometry) AS \"lat!\", ST_X(location::geometry) AS \"lng!\"\n        FROM addresses WHERE id = $2 AND user_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "line1",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "line2",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "landmark",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "pincode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "lat!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 9,
+        "name": "lng!",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "476bd2ff6959901517aa0b9feb8d0275db1b47429f5805186250c7f5bbcdb033"
+}

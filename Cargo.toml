@@ -30,9 +30,12 @@ sqlx = { version = "0.8", default-features = false, features = [
   "chrono",
   "uuid",
   "migrate",
+  "json",
 ] }
-# `redis` is used via the re-export `deadpool_redis::redis` to keep versions in lockstep.
+# Code uses the re-export `deadpool_redis::redis`; the direct `redis` dependency
+# only enables features on that same crate (Lua `Script` support).
 deadpool-redis = { version = "0.23", features = ["rt_tokio_1"] }
+redis = { version = "1", default-features = false, features = ["script", "aio", "tokio-comp"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["serde", "v4"] }
@@ -46,6 +49,9 @@ jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "json", "http2"] }
 validator = { version = "0.21", features = ["derive"] }
 base64 = "0.22"
+hmac = "0.13"
+sha2 = "0.11"
+hex = "0.4"
 http-body-util = "0.1"
 ts-rs = { version = "12", features = ["serde-compat", "uuid-impl", "chrono-impl", "format"] }
 

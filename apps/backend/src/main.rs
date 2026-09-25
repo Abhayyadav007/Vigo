@@ -1,5 +1,10 @@
 use anyhow::Context;
-use backend::{app, config::Config, services::user_service, state::AppState};
+use backend::{
+    app,
+    config::Config,
+    services::{order_service, user_service},
+    state::AppState,
+};
 use tokio::{net::TcpListener, signal};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -29,6 +34,7 @@ async fn main() -> anyhow::Result<()> {
 async fn serve(config: Config) -> anyhow::Result<()> {
     let addr = config.addr;
     let state = AppState::connect(config).await?;
+    let sweeper = tokio::spawn(sweep_reservations(state.clone()));
     let app = app::build_router(state);
 
     let listener = TcpListener::bind(addr)
@@ -39,7 +45,23 @@ async fn serve(config: Config) -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("serving HTTP")?;
+    sweeper.abort();
     Ok(())
+}
+
+/// Releases stock held by abandoned checkouts. Idempotent, so every instance
+/// can run it.
+async fn sweep_reservations(state: AppState) {
+    let mut tick = tokio::time::interval(std::time::Duration::from_secs(15));
+    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    loop {
+        tick.tick().await;
+        match order_service::sweep_expired_reservations(&state).await {
+            Ok(0) => {}
+            Ok(n) => tracing::info!(released = n, "expired reservations released"),
+            Err(error) => tracing::warn!(%error, "reservation sweep failed"),
+        }
+    }
 }
 
 /// Bootstraps the first admin. The user must have signed in once.

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT to_status AS \"to_status: OrderStatus\", note, created_at\n        FROM order_status_events WHERE order_id = $1 ORDER BY id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "to_status: OrderStatus",
+        "type_info": {
+          "Custom": {
+            "name": "order_status",
+            "kind": {
+              "Enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PICKING",
+                "PACKED",
+                "RIDER_ASSIGNED",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "PARTIALLY_FULFILLED"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "note",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "ab68daf83a0237ed6c74ba1dde2f1b3e4e75550f669ca991cf533aed373d4fba"
+}

@@ -3,6 +3,7 @@ import { EmptyState } from "@vigo/ui";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
 import { DeliveryGate } from "../../components/DeliveryGate";
+import { CartBar } from "../../components/CartControls";
 import { ProductGrid } from "../../components/ProductGrid";
 import { useStore } from "../../lib/location";
 
@@ -31,6 +32,7 @@ function CategoryProducts() {
         }}
         empty={products.isPending ? undefined : <EmptyState title="No products in this category yet" />}
       />
+      <CartBar />
     </View>
   );
 }

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE store_inventory SET quantity = quantity - $3\n        WHERE store_id = $1 AND product_id = $2 AND quantity >= $3\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ee198574d1511a67269a9e83eb1621f9ed75ec21ac0cc6178d08c1f9a41e8dd7"
+}

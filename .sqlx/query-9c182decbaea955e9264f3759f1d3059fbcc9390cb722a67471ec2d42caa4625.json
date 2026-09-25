@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE store_inventory SET quantity = quantity + $3 WHERE store_id = $1 AND product_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9c182decbaea955e9264f3759f1d3059fbcc9390cb722a67471ec2d42caa4625"
+}

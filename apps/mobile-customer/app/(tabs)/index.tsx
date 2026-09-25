@@ -3,6 +3,7 @@ import { CategoryTile, EmptyState } from "@vigo/ui";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CartBar } from "../../components/CartControls";
 import { ProductGrid } from "../../components/ProductGrid";
 import { useStore } from "../../lib/location";
 
@@ -64,6 +65,7 @@ export default function Home() {
           )
         }
       />
+      <CartBar />
     </View>
   );
 }

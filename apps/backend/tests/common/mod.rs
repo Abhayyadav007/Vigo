@@ -15,7 +15,10 @@ use backend::{
     app,
     auth::FirebaseVerifier,
     config::{AppEnv, Config},
-    services::media_service::MediaStore,
+    services::{
+        media_service::MediaStore,
+        payments::{CashOnDelivery, Payments, Razorpay},
+    },
     state::AppState,
 };
 use http_body_util::BodyExt;
@@ -25,6 +28,8 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 
 pub const PROJECT_ID: &str = "vigo-test";
+pub const RAZORPAY_KEY: &str = "rzp_test_vigo";
+pub const RAZORPAY_WEBHOOK_SECRET: &str = "whsec_test_vigo";
 pub const KID: &str = "test-kid";
 const PRIVATE_KEY: &[u8] = include_bytes!("../fixtures/test_rsa_private.pem");
 const PUBLIC_KEY: &[u8] = include_bytes!("../fixtures/test_rsa_public.pem");
@@ -37,6 +42,11 @@ pub struct TestApp {
 
 impl TestApp {
     pub fn new(db: PgPool) -> Self {
+        Self::with_config(db, |_| {})
+    }
+
+    /// Like `new`, with a hook to tweak config (e.g. a short reservation TTL).
+    pub fn with_config(db: PgPool, tweak: impl FnOnce(&mut Config)) -> Self {
         let _ = dotenvy::dotenv();
         let redis_url =
             std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".into());
@@ -47,7 +57,7 @@ impl TestApp {
         let verifier =
             FirebaseVerifier::with_static_keys(PROJECT_ID, HashMap::from([(KID.into(), key)]));
 
-        let config = Config {
+        let mut config = Config {
             app_env: AppEnv::Development,
             addr: "127.0.0.1:0".parse().expect("addr"),
             database_url: String::new(),
@@ -60,6 +70,13 @@ impl TestApp {
             request_timeout: Duration::from_secs(10),
             media_dir: std::env::temp_dir()
                 .join(format!("vigo-test-media-{}", uuid::Uuid::new_v4())),
+            reservation_ttl: Duration::from_secs(600),
+            razorpay: Some((RAZORPAY_KEY.into(), RAZORPAY_WEBHOOK_SECRET.into())),
+        };
+        tweak(&mut config);
+        let payments = Payments {
+            cod: CashOnDelivery,
+            razorpay: config.razorpay.clone().map(|(k, s)| Razorpay::new(k, s)),
         };
         let media_dir = config.media_dir.clone();
         let state = AppState {
@@ -68,6 +85,7 @@ impl TestApp {
             redis,
             verifier: Arc::new(verifier),
             media: Arc::new(MediaStore::Local { dir: media_dir }),
+            payments: Arc::new(payments),
         };
         Self {
             router: app::build_router(state.clone()),
@@ -152,6 +170,38 @@ impl TestApp {
         let headers = res.headers().clone();
         let bytes = res.into_body().collect().await.expect("body").to_bytes();
         (status, bytes.to_vec(), headers)
+    }
+
+    /// POST with extra headers (Idempotency-Key, webhook signatures).
+    pub async fn post_with_headers(
+        &self,
+        uri: &str,
+        token: Option<&str>,
+        headers: &[(&str, &str)],
+        body: &[u8],
+    ) -> (StatusCode, Value) {
+        let mut req = Request::builder()
+            .method(Method::POST)
+            .uri(uri)
+            .header(header::CONTENT_TYPE, "application/json");
+        if let Some(t) = token {
+            req = req.header(header::AUTHORIZATION, format!("Bearer {t}"));
+        }
+        for (k, v) in headers {
+            req = req.header(*k, *v);
+        }
+        let res = self
+            .router
+            .clone()
+            .oneshot(req.body(Body::from(body.to_vec())).expect("request"))
+            .await
+            .expect("response");
+        let status = res.status();
+        let bytes = res.into_body().collect().await.expect("body").to_bytes();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+        )
     }
 
     pub async fn get(&self, uri: &str, token: Option<&str>) -> (StatusCode, Value) {
