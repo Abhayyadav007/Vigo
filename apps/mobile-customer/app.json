@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Vigo",
+    "slug": "vigo-customer",
+    "scheme": "vigo-customer",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.vigo.customer",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.vigo.customer"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Vigo uses your location to find the nearest store that can deliver to you."
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ]
+  }
+}

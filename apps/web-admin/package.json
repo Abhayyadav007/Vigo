@@ -1,0 +1,35 @@
+{
+  "name": "@vigo/web-admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "e2e": "playwright test",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@vigo/api-client": "workspace:*",
+    "@vigo/types": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "firebase": "catalog:",
+    "react-router": "catalog:",
+    "leaflet": "catalog:",
+    "react-leaflet": "catalog:",
+    "@geoman-io/leaflet-geoman-free": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "@playwright/test": "catalog:",
+    "@types/node": "^24.0.0",
+    "@types/leaflet": "catalog:"
+  }
+}

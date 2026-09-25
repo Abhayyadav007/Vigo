@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE users SET role = $2\n        WHERE phone = $1\n        RETURNING id, firebase_uid, phone, name, role AS \"role: Role\", store_id,\n                  is_active, created_at, updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "firebase_uid",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "role: Role",
+        "type_info": {
+          "Custom": {
+            "name": "user_role",
+            "kind": {
+              "Enum": [
+                "CUSTOMER",
+                "PICKER",
+                "RIDER",
+                "ADMIN"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "store_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        {
+          "Custom": {
+            "name": "user_role",
+            "kind": {
+              "Enum": [
+                "CUSTOMER",
+                "PICKER",
+                "RIDER",
+                "ADMIN"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bdeef942c092eeb6165688b0178c37c03790d6bc1c02bb3fd05360515acd5fc5"
+}

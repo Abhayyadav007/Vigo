@@ -1,0 +1,29 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalEnv": ["EXPO_PUBLIC_*", "VITE_*"],
+  "tasks": {
+    "typegen": {
+      "dependsOn": ["^typegen"],
+      "inputs": ["$TURBO_ROOT$/apps/backend/src/**", "$TURBO_ROOT$/apps/backend/Cargo.toml", "scripts/**"],
+      "outputs": ["src/bindings/**", "src/index.ts"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typegen", "typegen"]
+    },
+    "build": {
+      "dependsOn": ["^typegen", "^build"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {
+      "dependsOn": ["^typegen"]
+    },
+    "test": {
+      "dependsOn": ["^typegen"]
+    },
+    "dev": {
+      "dependsOn": ["^typegen"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

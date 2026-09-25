@@ -1,0 +1,116 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id AS product_id, p.name AS product_name, p.brand, p.unit_label, p.barcode,\n               p.image_urls, c.name AS category_name, p.mrp_paise, p.price_paise,\n               (i.product_id IS NOT NULL) AS \"stocked!\",\n               coalesce(i.quantity, 0) AS \"quantity!\",\n               i.bin_location AS \"bin_location?\",\n               i.price_override_paise AS \"price_override_paise?\",\n               coalesce(i.is_available, false) AS \"is_available!\",\n               i.updated_at AS \"updated_at?\",\n               count(*) OVER () AS \"total!\"\n        FROM products p\n        JOIN categories c ON c.id = p.category_id\n        LEFT JOIN store_inventory i ON i.product_id = p.id AND i.store_id = $1\n        WHERE ($2::text IS NULL\n               OR p.barcode = $2\n               OR i.bin_location ILIKE $2 || '%'\n               OR (p.name || ' ' || coalesce(p.brand, '')) ILIKE '%' || $2 || '%')\n          AND ($3::bool IS NULL OR (i.product_id IS NOT NULL) = $3)\n        ORDER BY (i.product_id IS NULL), i.bin_location NULLS LAST, p.name, p.id\n        LIMIT $4 OFFSET $5\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "product_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "barcode",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "image_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "category_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "price_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "stocked!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "quantity!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "bin_location?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "price_override_paise?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 13,
+        "name": "is_available!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at?",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      true,
+      true,
+      null,
+      false,
+      null
+    ]
+  },
+  "hash": "f6d5fdbaf210d31d36696f57cec5c31ebaa3928125d391926587ffd22e387ce9"
+}

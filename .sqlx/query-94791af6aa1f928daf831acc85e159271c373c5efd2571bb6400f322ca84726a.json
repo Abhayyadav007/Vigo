@@ -1,0 +1,69 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO categories (parent_id, name, slug, image_url, sort_order, is_active)\n        VALUES ($1, $2, $3, $4, $5, $6)\n        RETURNING id, parent_id, name, slug, image_url, sort_order, is_active,\n                  0::bigint AS \"product_count!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "parent_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "sort_order",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "product_count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Int4",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "94791af6aa1f928daf831acc85e159271c373c5efd2571bb6400f322ca84726a"
+}

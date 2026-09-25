@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE products SET category_id = $2, name = $3, slug = $4, brand = $5, description = $6,\n                            unit_label = $7, barcode = $8, mrp_paise = $9, price_paise = $10,\n                            image_urls = $11, is_active = $12\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int8",
+        "Int8",
+        "TextArray",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4a333a4438b1d346dcb596fd95d6957437d0f2b8127091b9b59b80986eb6430c"
+}

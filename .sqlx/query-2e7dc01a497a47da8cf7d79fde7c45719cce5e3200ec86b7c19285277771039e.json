@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT c.id, c.name, c.slug, c.image_url, count(*) AS \"product_count!\"\n        FROM store_inventory i\n        JOIN dark_stores s ON s.id = i.store_id AND s.is_active\n        JOIN products p ON p.id = i.product_id AND p.is_active\n        JOIN categories c ON c.id = p.category_id AND c.is_active\n        WHERE i.store_id = $1 AND i.is_available\n        GROUP BY c.id\n        ORDER BY c.sort_order, c.name\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "slug",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "image_url",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "product_count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "2e7dc01a497a47da8cf7d79fde7c45719cce5e3200ec86b7c19285277771039e"
+}

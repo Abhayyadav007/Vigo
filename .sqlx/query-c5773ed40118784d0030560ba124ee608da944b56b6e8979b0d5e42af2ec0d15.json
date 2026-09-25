@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH RECURSIVE sub AS (\n            SELECT id FROM categories WHERE id = $1\n            UNION\n            SELECT c.id FROM categories c JOIN sub ON c.parent_id = sub.id\n        )\n        SELECT EXISTS (SELECT 1 FROM sub WHERE id = $2) AS \"exists!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c5773ed40118784d0030560ba124ee608da944b56b6e8979b0d5e42af2ec0d15"
+}

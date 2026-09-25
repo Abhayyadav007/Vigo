@@ -1,0 +1,11 @@
+{
+  "name": "@vigo/backend",
+  "private": true,
+  "description": "Turbo wrapper around the Rust backend crate.",
+  "scripts": {
+    "dev": "cargo run -p backend",
+    "build": "cargo build -p backend --release",
+    "lint": "cargo fmt -p backend --check && cargo clippy -p backend --all-targets -- -D warnings",
+    "test": "cargo test -p backend"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT p.id, p.category_id, p.name, p.brand, p.unit_label, p.image_urls, p.mrp_paise,\n               coalesce(i.price_override_paise, p.price_paise) AS \"price_paise!\",\n               i.quantity,\n               count(*) OVER () AS \"total!\"\n        FROM store_inventory i\n        JOIN dark_stores s ON s.id = i.store_id AND s.is_active\n        JOIN products p ON p.id = i.product_id AND p.is_active\n        JOIN categories c ON c.id = p.category_id AND c.is_active\n        WHERE i.store_id = $1 AND i.is_available\n          AND ($2::uuid IS NULL OR p.category_id = $2)\n          AND ($3::text IS NULL\n               OR (p.name || ' ' || coalesce(p.brand, '')) ILIKE '%' || $3 || '%'\n               -- Typo tolerance: best-matching word (\"panner\" -> \"Paneer\").\n               OR word_similarity($3, p.name || ' ' || coalesce(p.brand, '')) >= 0.4)\n        ORDER BY (i.quantity = 0),\n                 CASE WHEN $3::text IS NULL THEN 0\n                      ELSE 1 - word_similarity($3, p.name || ' ' || coalesce(p.brand, '')) END,\n                 p.name, p.id\n        LIMIT $4 OFFSET $5\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "category_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "brand",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "unit_label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "image_urls",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 6,
+        "name": "mrp_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "price_paise!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      false,
+      null
+    ]
+  },
+  "hash": "d2b641319f06f6835d3c93b7412ea76b1dbf7a548a88edff97a3f42f48842a99"
+}

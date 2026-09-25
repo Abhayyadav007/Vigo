@@ -1,0 +1,46 @@
+{
+  "name": "@vigo/api-client",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./native": "./src/firebase/native.ts",
+    "./web": "./src/firebase/web.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "node --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@vigo/types": "workspace:*",
+    "axios": "catalog:"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "catalog:",
+    "react": "catalog:",
+    "@react-native-firebase/auth": "catalog:",
+    "firebase": "catalog:"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:",
+    "@react-native-firebase/app": "catalog:",
+    "@react-native-firebase/auth": "catalog:",
+    "firebase": "catalog:",
+    "react-native": "catalog:",
+    "@types/node": "^24.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-native-firebase/auth": {
+      "optional": true
+    },
+    "firebase": {
+      "optional": true
+    }
+  }
+}

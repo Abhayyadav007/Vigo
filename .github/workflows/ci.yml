@@ -1,0 +1,280 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  # Compile-time checked queries read the committed .sqlx cache by default.
+  SQLX_OFFLINE: "true"
+  DATABASE_URL: postgres://vigo:vigo@localhost:5432/vigo
+  REDIS_URL: redis://localhost:6379
+  FIREBASE_PROJECT_ID: vigo-ci
+
+jobs:
+  backend:
+    name: Backend (fmt, clippy, sqlx, test, smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Postgres + PostGIS and Redis; reused by the docker job via the anchor.
+    services: &services
+      postgres:
+        image: imresamu/postgis:17-3.5
+        env:
+          POSTGRES_USER: vigo
+          POSTGRES_PASSWORD: vigo
+          POSTGRES_DB: vigo
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U vigo -d vigo"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: backend
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Install sqlx-cli
+        run: |
+          command -v sqlx >/dev/null \
+            || cargo install sqlx-cli --locked --no-default-features --features rustls,postgres
+
+      - name: Run migrations
+        run: sqlx migrate run --source apps/backend/migrations
+
+      - name: Check .sqlx offline cache matches the schema
+        env:
+          SQLX_OFFLINE: "false"
+        run: cargo sqlx prepare --workspace --check
+
+      - name: cargo test
+        run: cargo test --workspace --locked
+
+      - name: Smoke test the binary
+        run: |
+          cargo build --locked -p backend
+          ./target/debug/backend > backend.log 2>&1 &
+          scripts/smoke-test.sh http://localhost:8080
+
+      - name: Backend log
+        if: failure()
+        run: cat backend.log || true
+
+  frontend:
+    name: Frontend (typegen, typecheck, build, bundle)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # `typegen` compiles the backend's ts-rs export tests.
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: backend
+          save-if: false
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint, typecheck, test and build
+        run: pnpm turbo run lint typecheck test build --filter='!@vigo/backend'
+
+      - name: Generated types are committed and up to date
+        run: |
+          if [ -n "$(git status --porcelain packages/types)" ]; then
+            git status --porcelain packages/types
+            git --no-pager diff packages/types
+            echo "::error::packages/types is stale. Run 'pnpm typegen' and commit the result."
+            exit 1
+          fi
+
+      - name: Bundle Expo apps (iOS + Android JS)
+        env:
+          EXPO_PUBLIC_API_URL: https://api.example.invalid
+        run: |
+          for app in customer picker rider; do
+            for platform in ios android; do
+              echo "::group::mobile-$app ($platform)"
+              (cd "apps/mobile-$app" && CI=1 npx expo export --platform "$platform" --output-dir "dist/$platform")
+              echo "::endgroup::"
+            done
+          done
+
+      - name: Upload web-admin build
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-admin-dist
+          path: apps/web-admin/dist
+          retention-days: 14
+
+  e2e:
+    name: E2E (Firebase emulator + backend + web-admin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services: *services
+    env:
+      FIREBASE_PROJECT_ID: demo-vigo
+      FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+      VITE_API_URL: http://localhost:8080
+      VITE_FIREBASE_API_KEY: demo-api-key
+      VITE_FIREBASE_PROJECT_ID: demo-vigo
+      VITE_FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      # Backend CLI (promote-admin, seed-demo) used by the tests, run from the repo root.
+      PROMOTE_CMD: ./target/debug/backend promote-admin
+      BACKEND_CLI: ./target/debug/backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: backend
+          save-if: false
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      # The Firebase emulators run on the JVM.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start Firebase Auth emulator
+        run: |
+          pnpm dlx firebase-tools@15 emulators:start --only auth --project demo-vigo > emulator.log 2>&1 &
+          for _ in $(seq 1 90); do curl -fsS http://localhost:9099 >/dev/null 2>&1 && exit 0; sleep 2; done
+          cat emulator.log; exit 1
+
+      - name: Start backend (emulator mode)
+        run: |
+          cargo build --locked -p backend
+          ./target/debug/backend > backend.log 2>&1 &
+          scripts/smoke-test.sh http://localhost:8080
+
+      - name: API e2e (phone OTP -> sync -> roles)
+        run: |
+          ./target/debug/backend seed-demo
+          node scripts/e2e-auth.mjs http://localhost:8080
+
+      - name: Browser e2e (web-admin)
+        run: |
+          pnpm --filter @vigo/web-admin exec playwright install --with-deps chromium
+          pnpm --filter @vigo/web-admin e2e
+
+      - name: Logs
+        if: failure()
+        run: |
+          echo "::group::backend"; cat backend.log || true; echo "::endgroup::"
+          echo "::group::emulator"; cat emulator.log || true; echo "::endgroup::"
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: apps/web-admin/playwright-report
+          retention-days: 14
+
+  docker:
+    name: Backend image (build, smoke, publish on main)
+    needs: [backend, frontend, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services: *services
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/vigo-backend
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          load: true
+          tags: vigo-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Smoke test the image
+        run: |
+          docker run -d --name backend --network host \
+            -e DATABASE_URL -e REDIS_URL -e FIREBASE_PROJECT_ID \
+            vigo-backend:ci
+          scripts/smoke-test.sh http://localhost:8080
+
+      - name: Container log
+        if: always()
+        run: docker logs backend || true
+
+      - name: Log in to GHCR
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        if: env.PUBLISH == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=backend
