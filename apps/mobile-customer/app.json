@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Vigo",
+    "slug": "vigo-customer",
+    "scheme": "vigo-customer",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": { "bundleIdentifier": "com.vigo.customer", "supportsTablet": true },
+    "android": { "package": "com.vigo.customer" },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true }
+  }
+}

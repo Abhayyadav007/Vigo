@@ -1,11 +1,27 @@
 [workspace]
-resolver = "2"
-members = ["apps/*", "packages/*"]
+resolver = "3"
+# `apps/user_backend` and `packages/db` are superseded by `apps/backend`
+# and intentionally left out of the workspace.
+members = ["apps/backend"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.90"
 
 [workspace.dependencies]
-axum = "0.8.9"
+axum = { version = "0.8.9", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
-sqlx = { version = "0.8", features = [
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.7", features = [
+  "cors",
+  "trace",
+  "request-id",
+  "compression-gzip",
+  "compression-br",
+  "timeout",
+  "util",
+] }
+sqlx = { version = "0.8", default-features = false, features = [
   "runtime-tokio-rustls",
   "postgres",
   "macros",
@@ -13,11 +29,22 @@ sqlx = { version = "0.8", features = [
   "uuid",
   "migrate",
 ] }
+# `redis` is used via the re-export `deadpool_redis::redis` to keep versions in lockstep.
+deadpool-redis = { version = "0.23", features = ["rt_tokio_1"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["serde", "v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 tracing = "0.1"
-tracing-subscriber = "0.3"
-thiserror = "2.0.20"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+thiserror = "2"
+anyhow = "1"
+ts-rs = { version = "12", features = ["serde-compat", "uuid-impl", "chrono-impl", "format"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "warn"

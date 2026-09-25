@@ -1,0 +1,14 @@
+**/target
+**/node_modules
+**/.turbo
+**/dist
+**/.expo
+**/ios
+**/android
+.git
+.env
+.env.*
+apps/mobile-*
+apps/web-admin
+apps/user_backend
+packages

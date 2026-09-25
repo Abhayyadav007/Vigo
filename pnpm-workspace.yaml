@@ -1,0 +1,28 @@
+packages:
+  - apps/*
+  - packages/*
+  # Superseded by apps/backend; not JS packages.
+  - "!apps/user_backend"
+  - "!packages/db"
+
+# Single source of truth for versions shared across apps.
+# React / RN versions follow Expo SDK 57 (bundledNativeModules.json).
+catalog:
+  react: 19.2.3
+  react-dom: 19.2.3
+  react-native: 0.86.3
+  expo: ~57.0.25
+  expo-router: ~57.0.23
+  expo-status-bar: ~57.0.1
+  expo-constants: ~57.0.19
+  expo-linking: ~57.0.11
+  expo-dev-client: ~57.0.19
+  react-native-safe-area-context: ~5.7.0
+  react-native-screens: ~4.26.0
+  "@types/react": ~19.2.18
+  "@types/react-dom": ~19.2.7
+  "@tanstack/react-query": ^5.103.2
+  axios: ^1.20.0
+  typescript: ~6.0.3
+  vite: ^8.3.1
+  "@vitejs/plugin-react": ^6.1.1
