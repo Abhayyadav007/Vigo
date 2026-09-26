@@ -212,12 +212,24 @@ pub async fn set_inventory(
     if let Err(error) =
         cache_inventory::set_stock(&state.redis, store_id, product_id, req.quantity).await
     {
-        // TODO(phase-8): the reconciliation job resyncs the mirror from Postgres.
+        // The reconciliation job (`reconcile_stock`) repairs the mirror.
         tracing::error!(%error, %store_id, %product_id, "updating Redis stock mirror failed");
     }
     inventory::find(&state.db, store_id, product_id)
         .await?
         .ok_or(AppError::NotFound("inventory"))
+}
+
+/// Resyncs every active store's Redis stock mirror from Postgres. Runs
+/// periodically; returns the number of products synced.
+pub async fn reconcile_stock(state: &AppState) -> AppResult<usize> {
+    let mut synced = 0;
+    for store_id in crate::repositories::orders::active_store_ids(&state.db).await? {
+        let levels = inventory::levels(&state.db, store_id).await?;
+        cache_inventory::resync_stock(&state.redis, store_id, &levels).await?;
+        synced += levels.len();
+    }
+    Ok(synced)
 }
 
 /// Paise to "₹1,234.50" (Indian digit grouping).

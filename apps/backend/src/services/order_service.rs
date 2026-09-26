@@ -412,7 +412,7 @@ pub async fn confirm(
     tx.commit().await?;
 
     if let Err(error) = inventory::commit(&state.redis, order.store_id, order_id).await {
-        // TODO(phase-8): the reconciliation job resyncs the mirror from Postgres.
+        // `catalog_service::reconcile_stock` repairs the mirror.
         tracing::error!(%error, %order_id, "committing reservation in Redis failed");
     }
     if let Err(error) = carts::clear(&state.db, order.user_id, order.store_id).await {
@@ -472,7 +472,7 @@ pub async fn cancel(
         }
     }
     if order.payment_status == PaymentStatus::Paid {
-        // TODO(phase-8): issue the refund through the payment provider.
+        // TODO(prod): issue the refund through the payment provider.
         orders::set_payment_status(&mut *tx, order_id, PaymentStatus::Refunded).await?;
     } else if order.payment_method == PaymentMethod::Online {
         orders::set_payment_status(&mut *tx, order_id, PaymentStatus::Failed).await?;
@@ -635,7 +635,7 @@ pub async fn handle_razorpay_webhook(
                 OrderStatus::Placed => confirm(state, order_id, None, true).await?,
                 OrderStatus::Cancelled => {
                     // Paid after the reservation expired.
-                    // TODO(phase-8): refund automatically through the provider.
+                    // TODO(prod): refund automatically through the provider.
                     orders::set_payment_status(&state.db, order_id, PaymentStatus::Refunded)
                         .await?;
                     tracing::error!(%order_id, payment_id = payment.id, "payment for a cancelled order; refund needed");

@@ -2,7 +2,7 @@ use anyhow::Context;
 use backend::{
     app,
     config::Config,
-    services::{dispatch_service, order_service, user_service},
+    services::{catalog_service, dispatch_service, order_service, user_service},
     state::AppState,
 };
 use tokio::{net::TcpListener, signal};
@@ -36,6 +36,7 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     let state = AppState::connect(config).await?;
     let sweeper = tokio::spawn(sweep_reservations(state.clone()));
     let dispatcher = tokio::spawn(dispatch_loop(state.clone()));
+    let reconciler = tokio::spawn(reconcile_loop(state.clone()));
     let app = app::build_router(state);
 
     let listener = TcpListener::bind(addr)
@@ -48,7 +49,20 @@ async fn serve(config: Config) -> anyhow::Result<()> {
         .context("serving HTTP")?;
     sweeper.abort();
     dispatcher.abort();
+    reconciler.abort();
     Ok(())
+}
+
+/// Resyncs the Redis stock mirror from Postgres (the source of truth).
+async fn reconcile_loop(state: AppState) {
+    let mut tick = tokio::time::interval(std::time::Duration::from_secs(300));
+    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    loop {
+        tick.tick().await;
+        if let Err(error) = catalog_service::reconcile_stock(&state).await {
+            tracing::warn!(%error, "stock reconciliation failed");
+        }
+    }
 }
 
 /// Re-offers packed orders nobody has accepted yet. Safe on every instance:

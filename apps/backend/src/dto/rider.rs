@@ -117,7 +117,7 @@ pub struct ActiveDelivery {
     pub store_address: String,
     pub store_location: LatLng,
     pub drop: AddressSnapshot,
-    // TODO(phase-8): number masking via a calling provider instead of the raw phone.
+    // TODO(prod): number masking via a calling provider instead of the raw phone.
     pub customer_phone: String,
     pub item_count: i32,
     pub bag_count: Option<i32>,
