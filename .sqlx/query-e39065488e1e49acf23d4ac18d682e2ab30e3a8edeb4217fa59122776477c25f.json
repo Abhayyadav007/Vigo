@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE rider_profiles SET vehicle_type = $2, vehicle_number = $3 WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "vehicle_type",
+            "kind": {
+              "Enum": [
+                "BICYCLE",
+                "SCOOTER",
+                "MOTORCYCLE",
+                "EV_SCOOTER"
+              ]
+            }
+          }
+        },
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e39065488e1e49acf23d4ac18d682e2ab30e3a8edeb4217fa59122776477c25f"
+}

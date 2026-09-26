@@ -9,5 +9,6 @@ pub mod inventory;
 pub mod orders;
 pub mod picking;
 pub mod products;
+pub mod riders;
 pub mod stores;
 pub mod users;

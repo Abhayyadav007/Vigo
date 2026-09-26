@@ -18,13 +18,14 @@ use crate::{
         CheckoutRequest, CheckoutResponse, OrderDetail, OrderEvent, OrderItemDto,
         OrderStatusChanged, OrderSummary, RazorpayCheckout, display_number,
     },
+    dto::rider::AssignedRider,
     error::{AppError, AppResult},
     extractors::AuthUser,
     models::order::{AddressSnapshot, Order, OrderStatus, PaymentMethod, PaymentStatus},
     repositories::{
         addresses, carts,
         orders::{self, NewOrder, NewOrderItem},
-        stores,
+        riders, stores,
     },
     services::{
         payments::{PaymentInit, PaymentProvider, RazorpayWebhook},
@@ -338,10 +339,14 @@ pub(crate) async fn publish_status(
         status: to,
         at: Utc::now(),
     };
-    let channels = [
+    let mut channels = vec![
         events::order_channel(order_id),
         events::store_channel(order.store_id),
     ];
+    // The assigned (or just-unassigned) rider hears about their order too.
+    if let Ok(Some(rider)) = riders::latest_rider_for_order(&state.db, order_id).await {
+        channels.push(events::rider_channel(rider));
+    }
     if let Err(error) = events::publish(&state.redis, &channels, &event).await {
         tracing::warn!(%error, %order_id, "publishing order event failed");
     }
@@ -457,6 +462,9 @@ pub async fn cancel(
     };
     let stock_was_taken = prev != OrderStatus::Placed;
     let restock = restock_quantities(&items);
+    let had_rider = riders::end_active_for_order(&mut tx, order_id)
+        .await?
+        .is_some();
     if stock_was_taken {
         for &(product_id, qty) in &restock {
             orders::increment_stock(&mut tx, order.store_id, product_id, qty).await?;
@@ -480,6 +488,12 @@ pub async fn cancel(
         }
     } else {
         release_best_effort(state, order.store_id, order_id).await;
+    }
+    if had_rider || prev == OrderStatus::Packed {
+        // Frees the dispatch claim; open offers die with the PACKED status.
+        if let Err(error) = crate::cache::geo::clear_winner(&state.redis, order_id).await {
+            tracing::warn!(%error, %order_id, "clearing dispatch winner failed");
+        }
     }
     publish_status(state, order_id, Some(prev), OrderStatus::Cancelled).await;
     Ok(())
@@ -659,6 +673,7 @@ pub fn summary(order: &Order, item_count: i32) -> OrderSummary {
 }
 
 pub async fn detail(state: &AppState, order: Order) -> AppResult<OrderDetail> {
+    let rider = assigned_rider(state, &order).await?;
     let items = orders::items(&state.db, order.id).await?;
     let events = orders::events(&state.db, order.id).await?;
     let item_count = items.iter().map(|i| i.quantity).sum();
@@ -687,6 +702,7 @@ pub async fn detail(state: &AppState, order: Order) -> AppResult<OrderDetail> {
         address: order.address.0,
         delivery_otp: (!order.status.is_terminal() && order.status != OrderStatus::Placed)
             .then_some(order.delivery_otp),
+        rider,
         cancel_reason: order.cancel_reason,
         can_cancel: order.status.customer_cancellable(),
         events: events
@@ -698,6 +714,26 @@ pub async fn detail(state: &AppState, order: Order) -> AppResult<OrderDetail> {
             })
             .collect(),
     })
+}
+
+async fn assigned_rider(state: &AppState, order: &Order) -> AppResult<Option<AssignedRider>> {
+    if !matches!(
+        order.status,
+        OrderStatus::RiderAssigned | OrderStatus::PickedUp | OrderStatus::OutForDelivery
+    ) {
+        return Ok(None);
+    }
+    let Some(d) = riders::active_for_order(&state.db, order.id).await? else {
+        return Ok(None);
+    };
+    Ok(riders::contact(&state.db, d.rider_id)
+        .await?
+        .map(|c| AssignedRider {
+            name: c.name,
+            phone: c.phone,
+            vehicle_type: c.vehicle_type,
+            vehicle_number: c.vehicle_number,
+        }))
 }
 
 pub async fn get_for_customer(

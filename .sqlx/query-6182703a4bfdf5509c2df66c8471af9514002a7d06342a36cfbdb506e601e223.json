@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH ins AS (\n            INSERT INTO rider_profiles (user_id) VALUES ($1)\n            ON CONFLICT (user_id) DO NOTHING\n            RETURNING user_id, vehicle_type, vehicle_number, is_online\n        )\n        SELECT user_id AS \"user_id!\", vehicle_type AS \"vehicle_type!: VehicleType\",\n               vehicle_number, is_online AS \"is_online!\" FROM ins\n        UNION ALL\n        SELECT user_id, vehicle_type, vehicle_number, is_online\n        FROM rider_profiles WHERE user_id = $1\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "vehicle_type!: VehicleType",
+        "type_info": {
+          "Custom": {
+            "name": "vehicle_type",
+            "kind": {
+              "Enum": [
+                "BICYCLE",
+                "SCOOTER",
+                "MOTORCYCLE",
+                "EV_SCOOTER"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "vehicle_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_online!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "6182703a4bfdf5509c2df66c8471af9514002a7d06342a36cfbdb506e601e223"
+}

@@ -8,6 +8,8 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { apiClient, firebaseAuth } from "../lib/api";
+// Registers the background location task before anything else runs.
+import "../lib/tracking";
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
@@ -34,9 +36,11 @@ function RootStack() {
   }
   const signedIn = state.status === "signedIn";
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, headerTintColor: colors.brand }}>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="delivery" />
+        <Stack.Screen name="profile" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />

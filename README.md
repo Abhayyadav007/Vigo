@@ -92,6 +92,16 @@ claims an order (first one wins), scans each item with the camera or a hardware 
 (keyboard wedge), marks anything missing, then packs it with a bag count and staging
 slot. The customer is billed only for what was found; shelves found empty are zeroed.
 
+### Delivery (mobile-rider)
+
+Riders are assigned to a store in web-admin → Staff. Online riders share GPS in the
+background (every ~30 s while waiting, ~5 s on a delivery). When an order is packed it's
+offered to the 3 nearest available riders; the first to accept gets it. The rider picks
+up at the staging slot (bag count must match), the order flips to "out for delivery" as
+they leave the store, and delivery needs the customer's 4-digit OTP (5 tries) plus the
+exact cash amount for COD. The background location task needs a dev build with
+"Always" location permission.
+
 ## Checks
 
 ```sh
@@ -104,6 +114,7 @@ pnpm build
 pnpm e2e:auth                                  # API: phone OTP -> sync -> roles
 pnpm e2e:orders                                # API: address -> cart -> COD checkout -> cancel
 pnpm e2e:picker                                # API + WebSocket: live queue -> claim -> scan -> pack
+pnpm e2e:rider                                 # offer over WS -> accept -> pickup -> OTP delivery
 pnpm --filter @vigo/web-admin e2e              # Playwright: admin login, roles, catalog setup
 ```
 

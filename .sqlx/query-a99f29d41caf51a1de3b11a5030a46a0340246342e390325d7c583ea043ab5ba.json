@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE deliveries SET ended_at = now()\n        WHERE order_id = $1 AND delivered_at IS NULL AND ended_at IS NULL\n        RETURNING rider_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rider_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a99f29d41caf51a1de3b11a5030a46a0340246342e390325d7c583ea043ab5ba"
+}

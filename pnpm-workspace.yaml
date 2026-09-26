@@ -43,5 +43,6 @@ catalog:
   expo-camera: ~57.0.5
   expo-haptics: ~57.0.3
   expo-keep-awake: ~57.0.2
+  expo-task-manager: ~57.0.20
   "@expo/vector-icons": ^15.0.2
   "@vitejs/plugin-react": ^6.1.1

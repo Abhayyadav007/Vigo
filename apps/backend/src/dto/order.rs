@@ -213,6 +213,8 @@ pub struct OrderDetail {
     pub address: AddressSnapshot,
     /// Give this to the rider at the door. Hidden once the order is closed.
     pub delivery_otp: Option<String>,
+    /// Who's bringing it, once a rider is assigned.
+    pub rider: Option<super::rider::AssignedRider>,
     pub cancel_reason: Option<String>,
     pub can_cancel: bool,
     pub events: Vec<OrderEvent>,
