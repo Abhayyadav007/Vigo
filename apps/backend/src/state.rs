@@ -11,6 +11,7 @@ use crate::{
         media_service::MediaStore,
         payments::{CashOnDelivery, Payments, Razorpay},
     },
+    ws::hub::PubSubHub,
 };
 
 #[derive(Clone)]
@@ -21,6 +22,8 @@ pub struct AppState {
     pub verifier: Arc<FirebaseVerifier>,
     pub media: Arc<MediaStore>,
     pub payments: Arc<Payments>,
+    /// Redis Pub/Sub fan-out for WebSocket sessions.
+    pub hub: PubSubHub,
 }
 
 impl AppState {
@@ -78,7 +81,10 @@ impl AppState {
             tracing::info!("Razorpay not configured: online payments disabled (COD only)");
         }
 
+        let hub = PubSubHub::start(&config.redis_url).context("starting pub/sub hub")?;
+
         Ok(Self {
+            hub,
             payments: Arc::new(payments),
             config: Arc::new(config),
             db,

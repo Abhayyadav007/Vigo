@@ -8,6 +8,7 @@ pub mod customer_catalog_service;
 pub mod media_service;
 pub mod order_service;
 pub mod payments;
+pub mod picker_service;
 pub mod pricing;
 pub mod slug;
 pub mod store_service;

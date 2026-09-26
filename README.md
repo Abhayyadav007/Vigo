@@ -84,6 +84,14 @@ Online payment is off unless `RAZORPAY_KEY_ID` and `RAZORPAY_WEBHOOK_SECRET` are
 The Razorpay order-creation call is still a stub; the webhook
 (`POST /v1/payments/razorpay/webhook`) verifies signatures and is idempotent per event.
 
+### Picking (mobile-picker)
+
+Pickers are assigned to a store in web-admin → Staff. The queue updates live over
+`/v1/ws/picker` (authenticated with the Firebase token in the first message). A picker
+claims an order (first one wins), scans each item with the camera or a hardware scanner
+(keyboard wedge), marks anything missing, then packs it with a bag count and staging
+slot. The customer is billed only for what was found; shelves found empty are zeroed.
+
 ## Checks
 
 ```sh
@@ -95,6 +103,7 @@ pnpm build
 # End-to-end (needs db:up, emulators and the backend running as above)
 pnpm e2e:auth                                  # API: phone OTP -> sync -> roles
 pnpm e2e:orders                                # API: address -> cart -> COD checkout -> cancel
+pnpm e2e:picker                                # API + WebSocket: live queue -> claim -> scan -> pack
 pnpm --filter @vigo/web-admin e2e              # Playwright: admin login, roles, catalog setup
 ```
 

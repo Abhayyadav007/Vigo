@@ -20,6 +20,7 @@ use backend::{
         payments::{CashOnDelivery, Payments, Razorpay},
     },
     state::AppState,
+    ws::hub::PubSubHub,
 };
 use http_body_util::BodyExt;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header};
@@ -79,6 +80,7 @@ impl TestApp {
             razorpay: config.razorpay.clone().map(|(k, s)| Razorpay::new(k, s)),
         };
         let media_dir = config.media_dir.clone();
+        let redis_url_for_hub = config.redis_url.clone();
         let state = AppState {
             config: Arc::new(config),
             db,
@@ -86,6 +88,7 @@ impl TestApp {
             verifier: Arc::new(verifier),
             media: Arc::new(MediaStore::Local { dir: media_dir }),
             payments: Arc::new(payments),
+            hub: PubSubHub::start(&redis_url_for_hub).expect("pub/sub hub"),
         };
         Self {
             router: app::build_router(state.clone()),
@@ -157,6 +160,19 @@ impl TestApp {
             status,
             serde_json::from_slice(&bytes).unwrap_or(Value::Null),
         )
+    }
+
+    /// Serves the real router on a random local port (for WebSocket tests).
+    pub async fn serve(&self) -> std::net::SocketAddr {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("addr");
+        let router = self.router.clone();
+        tokio::spawn(async move {
+            axum::serve(listener, router).await.expect("serve");
+        });
+        addr
     }
 
     /// GET returning raw bytes and headers (static files).

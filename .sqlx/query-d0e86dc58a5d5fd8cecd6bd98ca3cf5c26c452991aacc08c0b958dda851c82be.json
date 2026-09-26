@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT o.id, o.number, o.status AS \"status: OrderStatus\",\n               (SELECT sum(quantity) FROM order_items i WHERE i.order_id = o.id)::int AS \"item_count!\",\n               (SELECT count(*) FROM order_items i WHERE i.order_id = o.id)::int AS \"line_count!\",\n               (SELECT count(*) FROM order_items i\n                WHERE i.order_id = o.id AND i.picked_quantity IS NOT NULL)::int AS \"lines_done!\",\n               o.picker_id, o.staging_slot, o.created_at\n        FROM orders o\n        WHERE o.store_id = $1 AND o.status IN ('CONFIRMED', 'PICKING', 'PACKED')\n        ORDER BY o.created_at, o.id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "number",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "status: OrderStatus",
+        "type_info": {
+          "Custom": {
+            "name": "order_status",
+            "kind": {
+              "Enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PICKING",
+                "PACKED",
+                "RIDER_ASSIGNED",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "PARTIALLY_FULFILLED"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "item_count!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "line_count!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "lines_done!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "picker_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "staging_slot",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "d0e86dc58a5d5fd8cecd6bd98ca3cf5c26c452991aacc08c0b958dda851c82be"
+}

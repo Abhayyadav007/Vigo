@@ -229,7 +229,7 @@ pub struct CancelOrderRequest {
 }
 
 /// Pushed on the `orders:{id}` and `stores:{storeId}:orders` Redis channels.
-#[derive(Debug, Clone, Serialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct OrderStatusChanged {

@@ -16,7 +16,8 @@
     "db:down": "docker compose down",
     "emulators": "pnpm dlx firebase-tools@15 emulators:start --only auth --project demo-vigo",
     "e2e:auth": "node scripts/e2e-auth.mjs",
-    "e2e:orders": "node scripts/e2e-orders.mjs"
+    "e2e:orders": "node scripts/e2e-orders.mjs",
+    "e2e:picker": "node scripts/e2e-picker.mjs"
   },
   "devDependencies": {
     "turbo": "^2.11.4",

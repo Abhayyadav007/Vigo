@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT oi.name FROM order_items oi JOIN products p ON p.id = oi.product_id\n        WHERE oi.order_id = $1 AND p.barcode = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8b4d5e479616a646ccc0d51936563a8f15a89480e8d1fcc344cd6b9820dbd1ad"
+}

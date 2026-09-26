@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE orders SET picker_id = $2,\n            picking_started_at = CASE WHEN $2::uuid IS NULL THEN NULL ELSE now() END\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8a55dff4e8ec469357271b3bb8322d4105aab77852c38340960148ae660e65fc"
+}

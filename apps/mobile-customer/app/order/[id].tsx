@@ -73,14 +73,20 @@ export default function OrderScreen() {
           <Text className="text-base font-bold text-ink">
             {o.itemCount} {o.itemCount === 1 ? "item" : "items"}
           </Text>
-          {o.items.map((i) => (
-            <View key={i.productId} className="flex-row justify-between gap-3">
-              <Text className="flex-1 text-sm text-ink" numberOfLines={2}>
-                {i.quantity} × {i.name} <Text className="text-muted">({i.unitLabel})</Text>
-              </Text>
-              <Text className="text-sm text-ink">{formatPaise(i.unitPricePaise * i.quantity)}</Text>
-            </View>
-          ))}
+          {o.items.map((i) => {
+            // After packing, lines may be short: the customer pays for what was found.
+            const qty = i.pickedQuantity ?? i.quantity;
+            const missing = i.quantity - qty;
+            return (
+              <View key={i.productId} className="flex-row justify-between gap-3">
+                <Text className="flex-1 text-sm text-ink" numberOfLines={2}>
+                  {qty} × {i.name} <Text className="text-muted">({i.unitLabel})</Text>
+                  {missing > 0 ? <Text className="text-warning">{`  ${missing} unavailable, not charged`}</Text> : null}
+                </Text>
+                <Text className="text-sm text-ink">{formatPaise(i.unitPricePaise * qty)}</Text>
+              </View>
+            );
+          })}
           <View className="my-1 h-px bg-line" />
           <View className="flex-row justify-between">
             <Text className="text-sm text-muted">Delivery fee</Text>
