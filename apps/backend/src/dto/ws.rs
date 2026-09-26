@@ -3,7 +3,10 @@ use ts_rs::TS;
 
 use uuid::Uuid;
 
-use super::{order::OrderStatusChanged, rider::DeliveryOffer};
+use super::{
+    order::OrderStatusChanged,
+    rider::{DeliveryOffer, RiderLocation},
+};
 
 /// Client -> server. The first message must be `auth`.
 #[derive(Debug, Deserialize, TS)]
@@ -30,6 +33,8 @@ pub enum WsServerMessage {
         #[serde(rename = "orderId")]
         order_id: Uuid,
     },
+    /// Customers/admins: the rider carrying this order moved.
+    RiderLocation { location: RiderLocation },
     /// Messages were dropped (slow client); refetch current state.
     Resync,
     /// Fatal; the server closes the socket after sending it.

@@ -1,6 +1,9 @@
+use std::time::Duration;
+
 use axum::{Json, extract::State};
 
 use crate::{
+    cache::rate_limit,
     dto::auth::MeResponse,
     error::{AppError, AppResult},
     extractors::{AuthUser, FirebaseIdentity},
@@ -14,6 +17,13 @@ pub async fn sync(
     State(state): State<AppState>,
     FirebaseIdentity(claims): FirebaseIdentity,
 ) -> AppResult<Json<MeResponse>> {
+    rate_limit::check(
+        &state.redis,
+        &format!("sync:{}", claims.sub),
+        10,
+        Duration::from_secs(60),
+    )
+    .await?;
     let user = auth_service::sync(&state, &claims).await?;
     Ok(Json(user.into()))
 }

@@ -24,6 +24,8 @@ use crate::{
         order::OrderStatusChanged,
         ws::{WsClientMessage, WsServerMessage},
     },
+    extractors::PathParam,
+    repositories::orders,
     services::auth_service,
     state::AppState,
 };
@@ -46,12 +48,30 @@ pub async fn rider(ws: WebSocketUpgrade, State(state): State<AppState>) -> Respo
     ws.on_upgrade(move |socket| session(socket, state, Audience::Rider))
 }
 
+/// `GET /v1/ws/orders/{id}`: live status + rider position for the customer's own order.
+pub async fn order(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+    PathParam(id): PathParam<Uuid>,
+) -> Response {
+    ws.on_upgrade(move |socket| session(socket, state, Audience::Order(id)))
+}
+
+/// `GET /v1/ws/admin`: every order event, for the live board.
+pub async fn admin(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
+    ws.on_upgrade(move |socket| session(socket, state, Audience::Admin))
+}
+
 #[derive(Clone, Copy)]
 enum Audience {
     /// Staff of one store: their store's order feed.
     StoreStaff(Role),
     /// A rider (with a store): their personal channel.
     Rider,
+    /// A customer watching one of their orders.
+    Order(Uuid),
+    /// Admins: all orders.
+    Admin,
 }
 
 struct Authed {
@@ -155,6 +175,22 @@ async fn authenticate(
                 return Err((CLOSE_FORBIDDEN, "not allowed"));
             }
             events::rider_channel(session.user_id)
+        }
+        Audience::Order(id) => {
+            let owner = orders::find(&state.db, id)
+                .await
+                .map_err(|_| (CLOSE_FORBIDDEN, "not allowed"))?
+                .map(|o| o.user_id);
+            if owner != Some(session.user_id) {
+                return Err((CLOSE_FORBIDDEN, "not allowed"));
+            }
+            events::order_channel(id)
+        }
+        Audience::Admin => {
+            if session.role != Role::Admin {
+                return Err((CLOSE_FORBIDDEN, "not allowed"));
+            }
+            events::admin_channel()
         }
     };
     let secs_left = (claims.exp - Utc::now().timestamp()).max(0);

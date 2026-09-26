@@ -342,6 +342,7 @@ pub(crate) async fn publish_status(
     let mut channels = vec![
         events::order_channel(order_id),
         events::store_channel(order.store_id),
+        events::admin_channel(),
     ];
     // The assigned (or just-unassigned) rider hears about their order too.
     if let Ok(Some(rider)) = riders::latest_rider_for_order(&state.db, order_id).await {
@@ -411,7 +412,7 @@ pub async fn confirm(
     tx.commit().await?;
 
     if let Err(error) = inventory::commit(&state.redis, order.store_id, order_id).await {
-        // TODO(phase-8): the reconciliation job resyncs the mirror from Postgres.
+        // `catalog_service::reconcile_stock` repairs the mirror.
         tracing::error!(%error, %order_id, "committing reservation in Redis failed");
     }
     if let Err(error) = carts::clear(&state.db, order.user_id, order.store_id).await {
@@ -471,7 +472,7 @@ pub async fn cancel(
         }
     }
     if order.payment_status == PaymentStatus::Paid {
-        // TODO(phase-8): issue the refund through the payment provider.
+        // TODO(prod): issue the refund through the payment provider.
         orders::set_payment_status(&mut *tx, order_id, PaymentStatus::Refunded).await?;
     } else if order.payment_method == PaymentMethod::Online {
         orders::set_payment_status(&mut *tx, order_id, PaymentStatus::Failed).await?;
@@ -634,7 +635,7 @@ pub async fn handle_razorpay_webhook(
                 OrderStatus::Placed => confirm(state, order_id, None, true).await?,
                 OrderStatus::Cancelled => {
                     // Paid after the reservation expired.
-                    // TODO(phase-8): refund automatically through the provider.
+                    // TODO(prod): refund automatically through the provider.
                     orders::set_payment_status(&state.db, order_id, PaymentStatus::Refunded)
                         .await?;
                     tracing::error!(%order_id, payment_id = payment.id, "payment for a cancelled order; refund needed");
@@ -726,9 +727,16 @@ async fn assigned_rider(state: &AppState, order: &Order) -> AppResult<Option<Ass
     let Some(d) = riders::active_for_order(&state.db, order.id).await? else {
         return Ok(None);
     };
+    let location = crate::cache::geo::last_fix(&state.redis, d.rider_id)
+        .await?
+        .map(|f| crate::dto::geo::LatLng {
+            lat: f.lat,
+            lng: f.lng,
+        });
     Ok(riders::contact(&state.db, d.rider_id)
         .await?
         .map(|c| AssignedRider {
+            location,
             name: c.name,
             phone: c.phone,
             vehicle_type: c.vehicle_type,

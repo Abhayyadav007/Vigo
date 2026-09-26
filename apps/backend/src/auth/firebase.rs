@@ -89,10 +89,6 @@ impl FirebaseVerifier {
         }
     }
 
-    pub fn is_emulator(&self) -> bool {
-        matches!(self.keys, KeySource::Emulator)
-    }
-
     pub async fn verify(&self, token: &str) -> Result<FirebaseClaims, TokenError> {
         let claims = match &self.keys {
             KeySource::Emulator => decode_unsigned(token)?,

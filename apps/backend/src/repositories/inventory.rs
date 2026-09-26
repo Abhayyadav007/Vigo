@@ -129,3 +129,20 @@ pub async fn find<'e>(
     .fetch_optional(db)
     .await
 }
+
+/// Every product's quantity at a store (reconciliation).
+pub async fn levels<'e>(
+    db: impl PgExecutor<'e>,
+    store_id: Uuid,
+) -> Result<Vec<(Uuid, i32)>, sqlx::Error> {
+    let rows = sqlx::query!(
+        "SELECT product_id, quantity FROM store_inventory WHERE store_id = $1",
+        store_id
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|r| (r.product_id, r.quantity))
+        .collect())
+}

@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import { apiClient } from "./api";
 
-export const LOCATION_TASK = "vigo-rider-location";
+const LOCATION_TASK = "vigo-rider-location";
 
 export type TrackingMode = "idle" | "delivery";
 

@@ -14,8 +14,8 @@ use backend::{
     models::order::OrderStatus,
     services::{dispatch_service, order_service},
 };
-use common::{TestApp, admin_token, create_store, error_code, random_phone};
-use futures::{SinkExt, StreamExt};
+use common::{TestApp, admin_token, create_store, error_code, next_json, next_of, random_phone};
+use futures::SinkExt;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tokio_tungstenite::tungstenite::Message;
@@ -736,30 +736,155 @@ async fn rider_websocket_gets_offers_and_revocations(db: PgPool) {
     assert_eq!(next_json(&mut ws2).await["code"], "FORBIDDEN");
 }
 
-async fn next_of<S>(ws: &mut S, kind: &str) -> Value
-where
-    S: StreamExt<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
-{
-    loop {
-        let msg = next_json(ws).await;
-        if msg["type"] == kind {
-            return msg;
-        }
-    }
+// ---------- phase 7: live tracking + admin board ----------
+
+async fn ws_auth(
+    addr: std::net::SocketAddr,
+    path: &str,
+    token: &str,
+) -> tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>> {
+    let (mut ws, _) = tokio_tungstenite::connect_async(format!("ws://{addr}{path}"))
+        .await
+        .unwrap();
+    ws.send(Message::text(
+        json!({ "type": "auth", "token": token }).to_string(),
+    ))
+    .await
+    .unwrap();
+    ws
 }
 
-async fn next_json<S>(ws: &mut S) -> Value
-where
-    S: StreamExt<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
-{
+#[sqlx::test]
+async fn customer_tracks_their_order_live(db: PgPool) {
+    let app = TestApp::new(db.clone());
+    let w = world(&app).await;
+    let picker = staff(&app, &w, "PICKER").await;
+    let r = rider(&app, &w, STORE).await;
+    let (order, customer) = packed_order(&app, &w, &picker, false).await;
+    let addr = app.serve().await;
+
+    // Someone else can't watch it.
+    let (stranger, _) = app.signed_in(&random_phone()).await;
+    let mut ws = ws_auth(addr, &format!("/v1/ws/orders/{order}"), &stranger).await;
+    assert_eq!(next_json(&mut ws).await["code"], "FORBIDDEN");
+
+    let mut ws = ws_auth(addr, &format!("/v1/ws/orders/{order}"), &customer).await;
+    assert_eq!(next_json(&mut ws).await["type"], "ready");
+
+    post(
+        &app,
+        &r,
+        &format!("/v1/rider/offers/{order}/accept"),
+        json!({}),
+    )
+    .await;
+    assert_eq!(
+        next_of(&mut ws, "order").await["event"]["status"],
+        "RIDER_ASSIGNED"
+    );
+    post(
+        &app,
+        &r,
+        &format!("/v1/rider/deliveries/{order}/pickup"),
+        json!({ "bagCount": 2 }),
+    )
+    .await;
+    assert_eq!(
+        next_of(&mut ws, "order").await["event"]["status"],
+        "PICKED_UP"
+    );
+
+    locate(&app, &r, (12.9760, 77.6412)).await;
+    let loc = next_of(&mut ws, "riderLocation").await;
+    assert_eq!(loc["location"]["orderId"], order);
+    assert!((loc["location"]["lat"].as_f64().unwrap() - 12.9760).abs() < 1e-6);
+
+    // The detail endpoint carries the last position for the first render.
+    let (_, detail) = app
+        .get(&format!("/v1/customer/orders/{order}"), Some(&customer))
+        .await;
+    assert!((detail["rider"]["location"]["lat"].as_f64().unwrap() - 12.9760).abs() < 1e-6);
+}
+
+#[sqlx::test]
+async fn admin_board_and_metrics(db: PgPool) {
+    let app = TestApp::new(db.clone());
+    let w = world(&app).await;
+    let picker = staff(&app, &w, "PICKER").await;
+    let r = rider(&app, &w, STORE).await;
+    let addr = app.serve().await;
+    let mut ws = ws_auth(addr, "/v1/ws/admin", &w.admin).await;
+    assert_eq!(next_json(&mut ws).await["type"], "ready");
+
+    let (order, customer) = packed_order(&app, &w, &picker, false).await;
+    // The admin channel is global (other tests share this Redis): find ours.
     loop {
-        let msg = tokio::time::timeout(Duration::from_secs(5), ws.next())
-            .await
-            .expect("timed out waiting for a message")
-            .expect("socket closed")
-            .expect("socket error");
-        if let Message::Text(text) = msg {
-            return serde_json::from_str(&text).unwrap();
+        let msg = next_of(&mut ws, "order").await;
+        if msg["event"]["orderId"] == order.as_str() {
+            break;
         }
     }
+
+    let (status, board) = app
+        .get(
+            &format!("/v1/admin/orders?storeId={}", w.store),
+            Some(&w.admin),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{board}");
+    assert_eq!(board[0]["id"], order);
+    assert_eq!(board[0]["status"], "PACKED");
+    assert_eq!(board[0]["storeCode"], "BLR-RIDE");
+
+    post(
+        &app,
+        &r,
+        &format!("/v1/rider/offers/{order}/accept"),
+        json!({}),
+    )
+    .await;
+    let (_, board) = app.get("/v1/admin/orders", Some(&w.admin)).await;
+    assert!(board[0]["riderPhone"].as_str().unwrap().starts_with("+91"));
+
+    post(
+        &app,
+        &r,
+        &format!("/v1/rider/deliveries/{order}/pickup"),
+        json!({ "bagCount": 2 }),
+    )
+    .await;
+    locate(&app, &r, DROP).await;
+    let (_, detail) = app
+        .get(&format!("/v1/customer/orders/{order}"), Some(&customer))
+        .await;
+    post(
+        &app,
+        &r,
+        &format!("/v1/rider/deliveries/{order}/deliver"),
+        json!({ "otp": detail["deliveryOtp"], "codCollectedPaise": 20_000 }),
+    )
+    .await;
+
+    let (_, board) = app
+        .get(
+            &format!("/v1/admin/orders?storeId={}", w.store),
+            Some(&w.admin),
+        )
+        .await;
+    assert_eq!(board, json!([]), "delivered orders leave the board");
+    let (status, m) = app
+        .get(
+            &format!("/v1/admin/metrics?storeId={}", w.store),
+            Some(&w.admin),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{m}");
+    assert_eq!(m["ordersToday"], 1);
+    assert_eq!(m["deliveredToday"], 1);
+    assert_eq!(m["gmvTodayPaise"], 20_000);
+    assert_eq!(m["ridersOnline"], 1);
+    assert!(m["avgDeliveryMinutes"].as_f64().unwrap() >= 0.0);
+
+    let (status, _) = app.get("/v1/admin/metrics", Some(&customer)).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
 }

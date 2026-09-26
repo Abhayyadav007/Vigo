@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 
 type Coords = { lat: number; lng: number };
 
-export type DeliveryState =
+type DeliveryState =
   | { status: "locating" }
   | { status: "denied" }
   | { status: "error"; message: string }

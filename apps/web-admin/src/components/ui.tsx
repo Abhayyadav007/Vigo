@@ -1,4 +1,4 @@
-import { ApiError, formatPaise, rupeesToPaise } from "@vigo/api-client";
+import { ApiError, rupeesToPaise } from "@vigo/api-client";
 import { useId, useState, type ReactNode } from "react";
 
 export function errorText(err: unknown): string | undefined {
@@ -92,4 +92,3 @@ export function Pager({
   );
 }
 
-export const money = formatPaise;

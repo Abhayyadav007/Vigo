@@ -18,6 +18,7 @@ export {
   adminCatalogKeys,
   useCategories,
   useInventory,
+  useLiveBoard,
   useProduct,
   useProducts,
   useSaveCategory,

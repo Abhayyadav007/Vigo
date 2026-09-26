@@ -1,0 +1,104 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT o.id, o.number, o.status AS \"status: OrderStatus\", s.code AS store_code,\n               o.payment_method AS \"payment_method: PaymentMethod\", o.total_paise,\n               (SELECT sum(quantity) FROM order_items i WHERE i.order_id = o.id)::int AS \"item_count!\",\n               (SELECT u.phone FROM deliveries d JOIN users u ON u.id = d.rider_id\n                WHERE d.order_id = o.id AND d.delivered_at IS NULL AND d.ended_at IS NULL) AS rider_phone,\n               o.created_at, o.updated_at\n        FROM orders o JOIN dark_stores s ON s.id = o.store_id\n        WHERE o.status NOT IN ('DELIVERED', 'CANCELLED', 'PARTIALLY_FULFILLED')\n          AND ($1::uuid IS NULL OR o.store_id = $1)\n        ORDER BY o.created_at, o.id\n        LIMIT 500\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "number",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "status: OrderStatus",
+        "type_info": {
+          "Custom": {
+            "name": "order_status",
+            "kind": {
+              "Enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PICKING",
+                "PACKED",
+                "RIDER_ASSIGNED",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "PARTIALLY_FULFILLED"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "store_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "payment_method: PaymentMethod",
+        "type_info": {
+          "Custom": {
+            "name": "payment_method",
+            "kind": {
+              "Enum": [
+                "COD",
+                "ONLINE"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "total_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "item_count!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "rider_phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "d779f11c2691c20b4e19e926fa9b1614c9277b1a87eee796706ae30530c74a17"
+}

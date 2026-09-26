@@ -102,6 +102,19 @@ they leave the store, and delivery needs the customer's 4-digit OTP (5 tries) pl
 exact cash amount for COD. The background location task needs a dev build with
 "Always" location permission.
 
+### Live tracking & admin
+
+Customers follow their order on a map (rider position streams over the order's
+WebSocket). web-admin → Overview is a live board of orders in flight plus today's
+metrics (orders, delivered, cancelled, GMV, average delivery time, riders online).
+
+### Hardening
+
+Sign-in sync and checkout are rate-limited (10/min per user). The Redis stock mirror is
+resynced from Postgres every 5 minutes. Items needing third-party accounts (Razorpay live
+API and refunds, R2 media storage, phone masking, a map tile provider) are marked
+`TODO(prod)` in the code.
+
 ## Checks
 
 ```sh

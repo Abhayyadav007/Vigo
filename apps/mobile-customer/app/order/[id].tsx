@@ -3,6 +3,7 @@ import { Button, colors, EmptyState } from "@vigo/ui";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Alert, Linking, ScrollView, Text, View } from "react-native";
 import { STATUS_LABEL, StatusChip } from "../../components/OrderStatus";
+import { TrackingMap } from "../../components/TrackingMap";
 
 export default function OrderScreen() {
   const { id, placed } = useLocalSearchParams<{ id: string; placed?: string }>();
@@ -56,6 +57,7 @@ export default function OrderScreen() {
         ) : null}
         {o.cancelReason ? <Text className="text-sm text-danger">Cancelled: {o.cancelReason}</Text> : null}
 
+        {o.rider ? <TrackingMap drop={{ lat: o.address.lat, lng: o.address.lng }} rider={o.rider.location} /> : null}
         {o.rider ? (
           <View className="flex-row items-center justify-between rounded-lg border border-line p-4">
             <View className="flex-1">
@@ -77,7 +79,7 @@ export default function OrderScreen() {
               </Text>
             </View>
           ))}
-          {/* TODO(phase-7): live map tracking once a rider is assigned. */}
+
         </View>
 
         <View className="gap-2 rounded-lg border border-line p-4">

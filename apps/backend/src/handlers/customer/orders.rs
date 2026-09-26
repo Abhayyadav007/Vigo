@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::{
     Json,
     extract::State,
@@ -6,6 +8,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
+    cache::rate_limit,
     dto::{
         order::{CancelOrderRequest, CheckoutRequest, CheckoutResponse, OrderDetail, OrderSummary},
         page::Page,
@@ -42,7 +45,13 @@ pub async fn checkout(
     headers: HeaderMap,
     ValidJson(body): ValidJson<CheckoutRequest>,
 ) -> AppResult<(StatusCode, Json<CheckoutResponse>)> {
-    // TODO(phase-8): rate-limit checkout per user.
+    rate_limit::check(
+        &state.redis,
+        &format!("checkout:{}", user.user_id),
+        10,
+        Duration::from_secs(60),
+    )
+    .await?;
     let key = idempotency_key(&headers)?;
     let res = order_service::checkout(&state, &user, key, &body).await?;
     Ok((StatusCode::CREATED, Json(res)))

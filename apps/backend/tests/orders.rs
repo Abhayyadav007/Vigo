@@ -717,3 +717,51 @@ async fn status_changes_are_published_to_redis(db: PgPool) {
     }
     assert_eq!(seen, ["PLACED", "CONFIRMED"]);
 }
+
+// ---------- phase 8: rate limits + reconciliation ----------
+
+#[sqlx::test]
+async fn checkout_is_rate_limited_per_user(db: PgPool) {
+    let app = TestApp::new(db.clone());
+    let s = shop(&app).await;
+    let (token, address) = customer(&app, HOME).await;
+    // Empty cart: each attempt is a cheap 422, but they still count.
+    for i in 1..=10 {
+        let (status, _) = checkout(&app, &token, s.store, &address, "COD", &key()).await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "attempt {i}");
+    }
+    let (status, body) = checkout(&app, &token, s.store, &address, "COD", &key()).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(error_code(&body), "RATE_LIMITED");
+
+    // Another customer isn't affected.
+    let (other, other_address) = customer(&app, HOME).await;
+    let (status, _) = checkout(&app, &other, s.store, &other_address, "COD", &key()).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[sqlx::test]
+async fn reconciliation_repairs_the_redis_mirror(db: PgPool) {
+    let app = TestApp::new(db.clone());
+    let s = shop(&app).await;
+    let milk = product(&app, &s, "Milk", 2_800, 5).await;
+    let (token, address) = customer(&app, HOME).await;
+    set_cart(&app, &token, s.store, milk, 2).await;
+    checkout(&app, &token, s.store, &address, "COD", &key()).await;
+    assert_eq!(pg_stock(&db, s.store, milk).await, 3);
+
+    // The mirror drifts (e.g. a Redis write failed after a Postgres commit).
+    inventory::set_stock(&app.state.redis, s.store, milk, 99)
+        .await
+        .unwrap();
+    let synced = backend::services::catalog_service::reconcile_stock(&app.state)
+        .await
+        .unwrap();
+    assert!(synced >= 1);
+    assert_eq!(
+        inventory::stock(&app.state.redis, s.store, milk)
+            .await
+            .unwrap(),
+        Some(3)
+    );
+}

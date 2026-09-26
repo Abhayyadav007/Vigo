@@ -3,6 +3,7 @@
 pub mod events;
 pub mod geo;
 pub mod inventory;
+pub mod rate_limit;
 pub mod session;
 
 use deadpool_redis::{Pool, redis};

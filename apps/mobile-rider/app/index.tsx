@@ -20,12 +20,14 @@ export default function Home() {
   const online = me.data?.isOnline ?? false;
   const onDelivery = !!me.data?.activeOrderId;
 
-  // Keep GPS in step with the rider's state (e.g. after an app restart).
+  // Keep GPS in step with the rider's state (e.g. after an app restart). Only
+  // online/delivery changes matter: `me` itself refetches on every live event.
+  const loaded = !!me.data;
   useEffect(() => {
-    if (!me.data) return;
+    if (!loaded) return;
     if (!online) void stopTracking();
     else void startTracking(onDelivery ? "delivery" : "idle").catch(() => undefined);
-  }, [me.data, online, onDelivery]);
+  }, [loaded, online, onDelivery]);
 
   if (me.isPending) {
     return (

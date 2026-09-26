@@ -117,7 +117,7 @@ pub struct ActiveDelivery {
     pub store_address: String,
     pub store_location: LatLng,
     pub drop: AddressSnapshot,
-    // TODO(phase-8): number masking via a calling provider instead of the raw phone.
+    // TODO(prod): number masking via a calling provider instead of the raw phone.
     pub customer_phone: String,
     pub item_count: i32,
     pub bag_count: Option<i32>,
@@ -171,9 +171,11 @@ pub struct AssignedRider {
     pub phone: String,
     pub vehicle_type: VehicleType,
     pub vehicle_number: Option<String>,
+    /// Last known position; live updates follow on `/v1/ws/orders/{id}`.
+    pub location: Option<LatLng>,
 }
 
-/// Pushed on `orders:{id}:rider` while the order is on its way (phase 7 map).
+/// Pushed on `orders:{id}` (as `riderLocation`) while the order is on its way.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

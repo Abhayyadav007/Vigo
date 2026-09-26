@@ -1,9 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  # Superseded by apps/backend; not JS packages.
-  - "!apps/user_backend"
-  - "!packages/db"
 
 # Single source of truth for versions shared across apps.
 # React / RN versions follow Expo SDK 57 (bundledNativeModules.json).
@@ -40,6 +37,7 @@ catalog:
   "@geoman-io/leaflet-geoman-free": ^2.20.2
   "@types/leaflet": ^1.9.22
   expo-location: ~57.0.20
+  react-native-maps: 1.27.2
   expo-camera: ~57.0.5
   expo-haptics: ~57.0.3
   expo-keep-awake: ~57.0.2

@@ -4,4 +4,4 @@ import type { LocationPoint } from "./LocationPoint";
 /**
  * Background location uploads come in batches; the newest point wins.
  */
-export type LocationBatch = { points: Array<LocationPoint> };
+export type LocationBatch = { points: Array<LocationPoint>, };

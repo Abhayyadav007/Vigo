@@ -3,14 +3,8 @@
 /**
  * `POST /v1/admin/categories`, `PUT /v1/admin/categories/{id}`.
  */
-export type CategoryRequest = {
-  name: string;
-  /**
-   * Derived from `name` when omitted.
-   */
-  slug?: string;
-  parentId?: string;
-  imageUrl?: string;
-  sortOrder: number;
-  isActive: boolean;
-};
+export type CategoryRequest = { name: string, 
+/**
+ * Derived from `name` when omitted.
+ */
+slug?: string, parentId?: string, imageUrl?: string, sortOrder: number, isActive: boolean, };

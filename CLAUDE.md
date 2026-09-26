@@ -4,11 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Vigo is a quick-commerce (10-minute grocery delivery) platform for **India only**: phone numbers are `+91` mobiles (enforced in the backend and in a DB `CHECK`), money is INR stored as `BIGINT` paise, and payments are UPI-first (Razorpay). It is a monorepo built in numbered phases (see git history / PR #1). Unfinished work is marked `// TODO(phase-N):`. Keep that convention and don't stub anything silently.
+Vigo is a quick-commerce (10-minute grocery delivery) platform for **India only**: phone numbers are `+91` mobiles (enforced in the backend and in a DB `CHECK`), money is INR stored as `BIGINT` paise, and payments are UPI-first (Razorpay). It is a monorepo built in 8 numbered phases (all built; see git history). What's left is marked `TODO(prod):`: work that needs a third-party account (Razorpay live Orders API/SDK and refunds, R2 storage, phone-number masking, a map tile provider) or isn't needed yet (upload GC). Don't stub anything silently.
 
 Four clients, four roles: `mobile-customer` (CUSTOMER), `mobile-picker` (PICKER), `mobile-rider` (RIDER), `web-admin` (ADMIN).
-
-`apps/user_backend` and `packages/db` are superseded leftovers. They are excluded from both the Cargo and pnpm workspaces. Don't edit them or build on them.
 
 ## Commands
 
@@ -45,6 +43,7 @@ pnpm e2e:auth                                          # API e2e (needs emulator
 pnpm --filter @vigo/web-admin exec playwright test -g "assign roles"   # browser e2e; runs `seed-demo` first, reuses a running Vite
 # e2e tests shell out to the backend CLI: BACKEND_CLI (default `cargo run -q -p backend --`), PROMOTE_CMD for e2e-auth.mjs
 scripts/smoke-test.sh [url]                            # black-box check of /healthz + error shape
+# e2e-*.mjs share helpers (emulator sign-in, api, check) in scripts/e2e-lib.mjs
 ```
 
 Mobile apps use `@react-native-firebase`, so they need a **dev build** (`pnpm prebuild && pnpm ios|android` in the app dir, with `firebase/GoogleService-Info.plist` / `google-services.json`, which are gitignored). Expo Go won't work. To check JS without a device, run `CI=1 npx expo export --platform ios` in the app dir.
@@ -103,6 +102,10 @@ Layering is strict:
 - **Cancellation.** `order_service::cancel` ends any active delivery and clears the winner.
 
 Map unique/FK violations to client errors with `error::map_constraint(e, &[(constraint_name, On::Conflict|On::Invalid, message)])` instead of letting them 500.
+
+**Live tracking & admin board.** Rider fixes are published as `riderLocation` messages on the order's own channel `orders:{id}`. Customers watch `/v1/ws/orders/{id}` (owner only); `OrderDetail.rider.location` gives the first position. Every status change also goes to `admin:orders` (`/v1/ws/admin`). `GET /v1/admin/orders` is the in-flight board and `/v1/admin/metrics` gives today's numbers (IST).
+
+**Hardening.** `cache/rate_limit.rs` is a fixed-window limiter that fails open. It is applied to `/v1/auth/sync` (per Firebase UID) and checkout (per user), at 10 a minute each, and answers 429 `RATE_LIMITED`. `catalog_service::reconcile_stock` overwrites every store's Redis stock mirror from Postgres every 5 minutes (`reconcile_loop` in `main.rs`).
 
 **Errors.** Everything returns `AppResult<T>`. `AppError` renders `{ "error": { "code", "message" } }`, and 5xx details are logged, never returned. For input, use `extractors::{ValidJson, ValidQuery, PathParam, Pagination}` instead of axum's `Json`/`Query`/`Path`: those keep the JSON error shape and run `validator` rules.
 
