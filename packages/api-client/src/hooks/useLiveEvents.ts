@@ -6,9 +6,10 @@ import { openLiveSocket, toWsUrl, type LiveStatus } from "../ws";
 
 /**
  * Keeps a live socket to `path` (e.g. `/v1/ws/picker`) open while signed in,
- * calling `onMessage` for every server message. Returns the connection status.
+ * calling `onMessage` for every server message. `null` stays disconnected.
+ * Returns the connection status.
  */
-export function useLiveEvents(path: string, onMessage: (msg: WsServerMessage) => void): LiveStatus {
+export function useLiveEvents(path: string | null, onMessage: (msg: WsServerMessage) => void): LiveStatus {
   const { state, getIdToken } = useAuth();
   const base = useApiBaseUrl();
   const [status, setStatus] = useState<LiveStatus>("connecting");
@@ -19,7 +20,7 @@ export function useLiveEvents(path: string, onMessage: (msg: WsServerMessage) =>
 
   const signedIn = state.status === "signedIn";
   useEffect(() => {
-    if (!signedIn) return;
+    if (!signedIn || !path) return;
     const socket = openLiveSocket({
       url: toWsUrl(base, path),
       getToken: (force) => getIdToken(force),

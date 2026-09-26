@@ -11,8 +11,11 @@ import type {
   OrderStatus,
   OrderSummary,
   Page,
+  WsServerMessage,
 } from "@vigo/types";
+import { useCallback } from "react";
 import { useApiClient } from "../context";
+import { useLiveEvents } from "./useLiveEvents";
 
 export const orderKeys = {
   addresses: ["addresses"] as const,
@@ -171,16 +174,32 @@ export function useOrders() {
   });
 }
 
-/** One order; polls while it's in progress. */
+/** One order, live over `/v1/ws/orders/{id}` while it's in progress (status + rider position). */
 export function useOrder(id: string | undefined) {
   const client = useApiClient();
-  return useQuery({
+  const qc = useQueryClient();
+  const query = useQuery({
     queryKey: orderKeys.order(id ?? ""),
     queryFn: async () => (await client.get<OrderDetail>(`/v1/customer/orders/${id}`)).data,
     enabled: !!id,
-    // TODO(phase-7): replace polling with the WebSocket order feed.
-    refetchInterval: (q) => (q.state.data && isOrderActive(q.state.data.status) ? 10_000 : false),
+    // Slow safety net in case the socket is down.
+    refetchInterval: (q) => (q.state.data && isOrderActive(q.state.data.status) ? 60_000 : false),
   });
+  const active = !!id && !!query.data && isOrderActive(query.data.status);
+  const onMessage = useCallback(
+    (msg: WsServerMessage) => {
+      const k = orderKeys.order(id ?? "");
+      if (msg.type === "riderLocation") {
+        const { lat, lng } = msg.location;
+        qc.setQueryData<OrderDetail>(k, (o) => (o?.rider ? { ...o, rider: { ...o.rider, location: { lat, lng } } } : o));
+      } else if (msg.type === "order" || msg.type === "resync") {
+        void qc.invalidateQueries({ queryKey: k });
+      }
+    },
+    [qc, id],
+  );
+  useLiveEvents(active ? `/v1/ws/orders/${id}` : null, onMessage);
+  return query;
 }
 
 export function useCancelOrder() {

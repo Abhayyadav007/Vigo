@@ -34,7 +34,7 @@ pub fn rider_channel(rider_id: Uuid) -> String {
     format!("riders:{rider_id}")
 }
 
-/// Live rider position for an order being delivered (customer tracking).
-pub fn order_rider_channel(order_id: Uuid) -> String {
-    format!("orders:{order_id}:rider")
+/// Every order event, for the admin live board.
+pub fn admin_channel() -> String {
+    "admin:orders".to_owned()
 }

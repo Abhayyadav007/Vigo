@@ -14,6 +14,7 @@ use crate::{
             ActiveDelivery, DeliverRequest, DeliveryHistoryItem, LocationBatch, RiderLocation,
             RiderMe, RiderProfileRequest,
         },
+        ws::WsServerMessage,
     },
     error::{AppError, AppResult},
     extractors::AuthUser,
@@ -145,17 +146,19 @@ pub async fn record_location(
             )
             .await?;
         }
-        let event = RiderLocation {
-            order_id: delivery.order_id,
-            lat: fix.lat,
-            lng: fix.lng,
-            at: Utc::now(),
+        let msg = WsServerMessage::RiderLocation {
+            location: RiderLocation {
+                order_id: delivery.order_id,
+                lat: fix.lat,
+                lng: fix.lng,
+                at: Utc::now(),
+            },
         };
-        // TODO(phase-7): customer app subscribes to this for the live map.
+        // Same channel as the order's status events: the customer's tracking socket.
         let _ = events::publish(
             &state.redis,
-            &[events::order_rider_channel(delivery.order_id)],
-            &event,
+            &[events::order_channel(delivery.order_id)],
+            &msg,
         )
         .await;
     }

@@ -342,6 +342,7 @@ pub(crate) async fn publish_status(
     let mut channels = vec![
         events::order_channel(order_id),
         events::store_channel(order.store_id),
+        events::admin_channel(),
     ];
     // The assigned (or just-unassigned) rider hears about their order too.
     if let Ok(Some(rider)) = riders::latest_rider_for_order(&state.db, order_id).await {
@@ -726,9 +727,16 @@ async fn assigned_rider(state: &AppState, order: &Order) -> AppResult<Option<Ass
     let Some(d) = riders::active_for_order(&state.db, order.id).await? else {
         return Ok(None);
     };
+    let location = crate::cache::geo::last_fix(&state.redis, d.rider_id)
+        .await?
+        .map(|f| crate::dto::geo::LatLng {
+            lat: f.lat,
+            lng: f.lng,
+        });
     Ok(riders::contact(&state.db, d.rider_id)
         .await?
         .map(|c| AssignedRider {
+            location,
             name: c.name,
             phone: c.phone,
             vehicle_type: c.vehicle_type,

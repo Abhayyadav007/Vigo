@@ -33,7 +33,8 @@
     "react-native-reanimated": "catalog:",
     "react-native-worklets": "catalog:",
     "expo-location": "catalog:",
-    "@expo/vector-icons": "catalog:"
+    "@expo/vector-icons": "catalog:",
+    "react-native-maps": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

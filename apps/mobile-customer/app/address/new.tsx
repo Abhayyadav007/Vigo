@@ -3,6 +3,7 @@ import { Button, Screen, TextField } from "@vigo/ui";
 import { Stack, router } from "expo-router";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import MapView, { Marker } from "react-native-maps";
 import { useDelivery } from "../../lib/location";
 
 const LABELS = ["Home", "Work", "Other"] as const;
@@ -18,9 +19,10 @@ export default function NewAddress() {
   const [pincode, setPincode] = useState("");
   const [error, setError] = useState<string>();
 
-  // TODO(phase-7): let the customer drag a map pin; for now the address is
-  // pinned at their current location.
-  const coords = state.status === "ready" || state.status === "unserviceable" ? state.coords : null;
+  // Starts at the current location; the customer drags the pin to the door.
+  const here = state.status === "ready" || state.status === "unserviceable" ? state.coords : null;
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+  const coords = pin ?? here;
 
   const submit = () => {
     setError(undefined);
@@ -46,8 +48,20 @@ export default function NewAddress() {
   return (
     <Screen scroll>
       <Stack.Screen options={{ headerShown: true, title: "Add address" }} />
+      {coords ? (
+        <MapView
+          style={{ height: 200, borderRadius: 12 }}
+          initialRegion={{ latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.005, longitudeDelta: 0.005 }}
+        >
+          <Marker
+            draggable
+            coordinate={{ latitude: coords.lat, longitude: coords.lng }}
+            onDragEnd={(e) => setPin({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })}
+          />
+        </MapView>
+      ) : null}
       <Text className="text-sm text-muted">
-        {coords ? "Pinned at your current location." : "Waiting for your location…"}
+        {coords ? "Drag the pin to your door." : "Waiting for your location…"}
       </Text>
       <View className="flex-row gap-2">
         {LABELS.map((l) => (

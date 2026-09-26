@@ -11,5 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     ...config.android,
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./firebase/google-services.json",
+    // Android map tiles (react-native-maps); iOS uses Apple Maps with no key.
+    config: { googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY ?? "" } },
   },
 });
