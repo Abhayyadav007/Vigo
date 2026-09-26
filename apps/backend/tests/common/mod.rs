@@ -22,10 +22,12 @@ use backend::{
     state::AppState,
     ws::hub::PubSubHub,
 };
+use futures::StreamExt;
 use http_body_util::BodyExt;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header};
 use serde_json::{Value, json};
 use sqlx::PgPool;
+use tokio_tungstenite::tungstenite::Message;
 use tower::ServiceExt;
 
 pub const PROJECT_ID: &str = "vigo-test";
@@ -367,4 +369,34 @@ pub async fn admin_token(app: &TestApp) -> String {
         .await
         .expect("promote");
     token
+}
+
+/// Next WebSocket text message as JSON (5 s timeout).
+pub async fn next_json<S>(ws: &mut S) -> Value
+where
+    S: StreamExt<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
+{
+    loop {
+        let msg = tokio::time::timeout(Duration::from_secs(5), ws.next())
+            .await
+            .expect("timed out waiting for a message")
+            .expect("socket closed")
+            .expect("socket error");
+        if let Message::Text(text) = msg {
+            return serde_json::from_str(&text).unwrap();
+        }
+    }
+}
+
+/// Next message of the given `type`, skipping others.
+pub async fn next_of<S>(ws: &mut S, kind: &str) -> Value
+where
+    S: StreamExt<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
+{
+    loop {
+        let msg = next_json(ws).await;
+        if msg["type"] == kind {
+            return msg;
+        }
+    }
 }

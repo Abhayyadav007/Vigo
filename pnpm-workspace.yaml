@@ -1,9 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  # Superseded by apps/backend; not JS packages.
-  - "!apps/user_backend"
-  - "!packages/db"
 
 # Single source of truth for versions shared across apps.
 # React / RN versions follow Expo SDK 57 (bundledNativeModules.json).

@@ -1,7 +1,5 @@
 [workspace]
 resolver = "3"
-# `apps/user_backend` and `packages/db` are superseded by `apps/backend`
-# and intentionally left out of the workspace.
 members = ["apps/backend"]
 
 [workspace.package]
@@ -53,7 +51,7 @@ hmac = "0.13"
 sha2 = "0.11"
 hex = "0.4"
 http-body-util = "0.1"
-ts-rs = { version = "12", features = ["serde-compat", "uuid-impl", "chrono-impl", "format"] }
+ts-rs = { version = "12", features = ["serde-compat", "uuid-impl", "chrono-impl"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

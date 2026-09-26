@@ -4,4 +4,4 @@ import type { Role } from "./Role";
 /**
  * `PATCH /v1/admin/users/{id}/role`
  */
-export type UpdateRoleRequest = { role: Role; storeId?: string };
+export type UpdateRoleRequest = { role: Role, storeId?: string, };

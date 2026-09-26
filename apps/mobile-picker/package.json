@@ -34,8 +34,7 @@
     "react-native-worklets": "catalog:",
     "expo-camera": "catalog:",
     "expo-haptics": "catalog:",
-    "expo-keep-awake": "catalog:",
-    "@expo/vector-icons": "catalog:"
+    "expo-keep-awake": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

@@ -10,5 +10,4 @@
 .env.*
 apps/mobile-*
 apps/web-admin
-apps/user_backend
 packages

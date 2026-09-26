@@ -48,16 +48,6 @@ pub async fn set_online<'e>(
     Ok(())
 }
 
-pub async fn touch<'e>(db: impl PgExecutor<'e>, user_id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "UPDATE rider_profiles SET last_seen_at = now() WHERE user_id = $1",
-        user_id
-    )
-    .execute(db)
-    .await?;
-    Ok(())
-}
-
 pub async fn update_vehicle<'e>(
     db: impl PgExecutor<'e>,
     user_id: Uuid,

@@ -2,16 +2,12 @@
 import type { BillSummary } from "./BillSummary";
 import type { CartLine } from "./CartLine";
 
-export type CartResponse = {
-  storeId: string;
-  items: Array<CartLine>;
-  itemCount: number;
-  /**
-   * Bill for the available lines only.
-   */
-  bill: BillSummary;
-  /**
-   * True when every line can be ordered as is.
-   */
-  canCheckout: boolean;
-};
+export type CartResponse = { storeId: string, items: Array<CartLine>, itemCount: number, 
+/**
+ * Bill for the available lines only.
+ */
+bill: BillSummary, 
+/**
+ * True when every line can be ordered as is.
+ */
+canCheckout: boolean, };

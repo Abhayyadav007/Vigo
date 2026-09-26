@@ -6,11 +6,4 @@ import type { RiderLocation } from "./RiderLocation";
 /**
  * Server -> client.
  */
-export type WsServerMessage =
-  | { "type": "ready" }
-  | { "type": "order"; event: OrderStatusChanged }
-  | { "type": "offer"; offer: DeliveryOffer }
-  | { "type": "offerRevoked"; orderId: string }
-  | { "type": "riderLocation"; location: RiderLocation }
-  | { "type": "resync" }
-  | { "type": "error"; code: string; message: string };
+export type WsServerMessage = { "type": "ready" } | { "type": "order", event: OrderStatusChanged, } | { "type": "offer", offer: DeliveryOffer, } | { "type": "offerRevoked", orderId: string, } | { "type": "riderLocation", location: RiderLocation, } | { "type": "resync" } | { "type": "error", code: string, message: string, };

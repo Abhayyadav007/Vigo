@@ -35,8 +35,7 @@
     "expo-location": "catalog:",
     "expo-task-manager": "catalog:",
     "expo-haptics": "catalog:",
-    "expo-keep-awake": "catalog:",
-    "@expo/vector-icons": "catalog:"
+    "expo-keep-awake": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

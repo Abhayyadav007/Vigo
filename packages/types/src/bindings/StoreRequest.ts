@@ -5,14 +5,8 @@ import type { LatLng } from "./LatLng";
 /**
  * `POST /v1/admin/stores`, `PUT /v1/admin/stores/{id}` (full replace).
  */
-export type StoreRequest = {
-  /**
-   * e.g. `BLR-IND-01`
-   */
-  code: string;
-  name: string;
-  address: string;
-  location: LatLng;
-  serviceArea: GeoJsonPolygon;
-  isActive: boolean;
-};
+export type StoreRequest = { 
+/**
+ * e.g. `BLR-IND-01`
+ */
+code: string, name: string, address: string, location: LatLng, serviceArea: GeoJsonPolygon, isActive: boolean, };

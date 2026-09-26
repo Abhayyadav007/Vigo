@@ -3,13 +3,12 @@
 
 mod common;
 
-use std::time::Duration;
-
 use axum::http::{Method, StatusCode};
 use common::{
-    TestApp, TokenBuilder, admin_token, create_store, error_code, random_phone, store_body,
+    TestApp, TokenBuilder, admin_token, create_store, error_code, next_json, random_phone,
+    store_body,
 };
-use futures::{SinkExt, StreamExt};
+use futures::SinkExt;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tokio_tungstenite::tungstenite::Message;
@@ -533,20 +532,4 @@ async fn picker_websocket_streams_store_events(db: PgPool) {
     .await
     .unwrap();
     assert_eq!(next_json(&mut ws).await["code"], "UNAUTHORIZED");
-}
-
-async fn next_json<S>(ws: &mut S) -> Value
-where
-    S: StreamExt<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
-{
-    loop {
-        let msg = tokio::time::timeout(Duration::from_secs(5), ws.next())
-            .await
-            .expect("timed out waiting for a message")
-            .expect("socket closed")
-            .expect("socket error");
-        if let Message::Text(text) = msg {
-            return serde_json::from_str(&text).unwrap();
-        }
-    }
 }

@@ -8,31 +8,16 @@ import type { OrderStatus } from "./OrderStatus";
 import type { PaymentMethod } from "./PaymentMethod";
 import type { PaymentStatus } from "./PaymentStatus";
 
-export type OrderDetail = {
-  storeId: string;
-  items: Array<OrderItemDto>;
-  bill: BillSummary;
-  address: AddressSnapshot;
-  /**
-   * Give this to the rider at the door. Hidden once the order is closed.
-   */
-  deliveryOtp: string | null;
-  /**
-   * Who's bringing it, once a rider is assigned.
-   */
-  rider: AssignedRider | null;
-  cancelReason: string | null;
-  canCancel: boolean;
-  events: Array<OrderEvent>;
-  id: string;
-  /**
-   * Display number, e.g. `VG100001`.
-   */
-  number: string;
-  status: OrderStatus;
-  paymentMethod: PaymentMethod;
-  paymentStatus: PaymentStatus;
-  totalPaise: number;
-  itemCount: number;
-  createdAt: string;
-};
+export type OrderDetail = { storeId: string, items: Array<OrderItemDto>, bill: BillSummary, address: AddressSnapshot, 
+/**
+ * Give this to the rider at the door. Hidden once the order is closed.
+ */
+deliveryOtp: string | null, 
+/**
+ * Who's bringing it, once a rider is assigned.
+ */
+rider: AssignedRider | null, cancelReason: string | null, canCancel: boolean, events: Array<OrderEvent>, id: string, 
+/**
+ * Display number, e.g. `VG100001`.
+ */
+number: string, status: OrderStatus, paymentMethod: PaymentMethod, paymentStatus: PaymentStatus, totalPaise: number, itemCount: number, createdAt: string, };
