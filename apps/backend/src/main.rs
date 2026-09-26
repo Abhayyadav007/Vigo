@@ -2,7 +2,7 @@ use anyhow::Context;
 use backend::{
     app,
     config::Config,
-    services::{order_service, user_service},
+    services::{dispatch_service, order_service, user_service},
     state::AppState,
 };
 use tokio::{net::TcpListener, signal};
@@ -35,6 +35,7 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     let addr = config.addr;
     let state = AppState::connect(config).await?;
     let sweeper = tokio::spawn(sweep_reservations(state.clone()));
+    let dispatcher = tokio::spawn(dispatch_loop(state.clone()));
     let app = app::build_router(state);
 
     let listener = TcpListener::bind(addr)
@@ -46,7 +47,21 @@ async fn serve(config: Config) -> anyhow::Result<()> {
         .await
         .context("serving HTTP")?;
     sweeper.abort();
+    dispatcher.abort();
     Ok(())
+}
+
+/// Re-offers packed orders nobody has accepted yet. Safe on every instance:
+/// an open wave or a winner in Redis makes the others skip the order.
+async fn dispatch_loop(state: AppState) {
+    let mut tick = tokio::time::interval(std::time::Duration::from_secs(5));
+    tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    loop {
+        tick.tick().await;
+        if let Err(error) = dispatch_service::tick(&state).await {
+            tracing::warn!(%error, "dispatch tick failed");
+        }
+    }
 }
 
 /// Releases stock held by abandoned checkouts. Idempotent, so every instance

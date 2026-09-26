@@ -35,6 +35,8 @@ cargo test -p backend --test auth role_change          # one integration test (n
 cargo test -p backend --test catalog serviceability    # catalog/stores/inventory/uploads tests
 cargo test -p backend --test orders concurrent         # checkout/overselling/payments/state machine
 cargo test -p backend --test picker websocket          # picking flow + a real WebSocket session (TestApp::serve)
+cargo test -p backend --test rider first_accept        # dispatch, OTP delivery, rider WS
+pnpm e2e:rider                                         # packed -> live offer -> accept -> pickup -> OTP delivery
 pnpm e2e:picker                                        # picking + live WS against a running backend
 pnpm e2e:orders                                        # API purchase flow against a running backend (needs seed-demo)
 pnpm --filter @vigo/api-client test                    # node:test unit tests (money/phone/media helpers)
@@ -92,6 +94,13 @@ Layering is strict:
 - **Access.** Pickers see only their `store_id`; other stores' orders return 404. Every mutation requires PICKING and `picker_id == me`, and returns codes such as `NOT_YOUR_ORDER` and `ALREADY_CLAIMED`.
 - **Scanning.** A scan is one atomic `UPDATE … picked_quantity + 1 … < quantity`. It answers 422 `SCAN_MISMATCH` or 409 `LINE_COMPLETE` via `AppError::Coded`.
 - **Packing.** Packing re-bills `item_total` to the picked units (the delivery fee stays as charged) and zeroes the shelf for short lines. Cancelling restocks `picked_quantity` when the line was counted, otherwise the full `quantity`.
+
+**Dispatch & delivery** (`services/dispatch_service.rs`, `services/rider_service.rs`, `cache/geo.rs`):
+- **Positions.** Riders' fixes go to Redis `riders:{store}:geo` (GEOADD; searched with GEOSEARCH, never GEORADIUS) plus `riders:{store}:seen`. Riders with no fix within `RIDER_STALE_SECS`, offline riders (`rider_profiles.is_online`) and busy riders (an active `deliveries` row) are never offered work.
+- **Offers.** Packing calls `dispatch_best_effort`, and `main.rs` runs a 5 s `dispatch_loop` for anything left over. Each wave offers the nearest `DISPATCH_WAVE_SIZE` untried riders, stored in `dsp:{order}:offered` with the offer TTL. `claim_offer.lua` decides the first accept (`dsp:{order}:winner`), then `accept` does the PACKED→RIDER_ASSIGNED compare-and-set and inserts the delivery. The partial unique indexes allow one active delivery per order and per rider. On failure the winner key is cleared.
+- **Rider feed.** The rider channel `riders:{id}` carries pre-serialised `WsServerMessage`s (`offer`, `offerRevoked`); the WS session passes anything starting with `{"type"` straight through. `publish_status` also notifies the order's latest rider.
+- **Delivery.** Pickup checks the bag count. The first fix more than 200 m from the store flips PICKED_UP→OUT_FOR_DELIVERY. Deliver requires: being within 500 m of the drop (when the fix is under 2 min old); the OTP, compared in constant time and locked after 5 wrong tries with 423 `OTP_LOCKED`; and the exact COD amount. The order ends DELIVERED, or PARTIALLY_FULFILLED if any line was picked short.
+- **Cancellation.** `order_service::cancel` ends any active delivery and clears the winner.
 
 Map unique/FK violations to client errors with `error::map_constraint(e, &[(constraint_name, On::Conflict|On::Invalid, message)])` instead of letting them 500.
 

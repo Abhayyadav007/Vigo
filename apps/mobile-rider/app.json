@@ -8,13 +8,28 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.vigo.rider",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location"
+        ]
+      }
     },
     "android": {
       "package": "com.vigo.rider"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Vigo Rider shares your location while you're online so we can offer you nearby deliveries and show customers where their order is.",
+          "locationWhenInUsePermission": "Vigo Rider uses your location to offer you nearby deliveries.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       [

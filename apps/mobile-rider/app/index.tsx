@@ -1,37 +1,107 @@
-import { formatIndianPhone, useAuth, useCurrentUser, useHealth } from "@vigo/api-client";
-import { Button, Screen, StatusCard, type StatusTone } from "@vigo/ui";
-import { Text, View } from "react-native";
+import { useAuth, useRiderMe, useRiderOffers, useSetOnline, type LiveStatus } from "@vigo/api-client";
+import type { DeliveryOffer } from "@vigo/types";
+import { Button, colors, EmptyState, Screen } from "@vigo/ui";
+import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
+import { useCallback, useEffect } from "react";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { OfferSheet } from "../components/OfferSheet";
+import { requestPermissions, startTracking, stopTracking } from "../lib/tracking";
 
-// TODO(phase-6): replace with the real Vigo Rider home screen.
 export default function Home() {
-  const user = useCurrentUser();
   const { signOut } = useAuth();
-  const health = useHealth();
-  const tone = (s: "ok" | "down" | undefined): StatusTone => s ?? (health.isError ? "down" : "pending");
-  const label = (s: "ok" | "down" | undefined) => s ?? (health.isError ? "unreachable" : "…");
+  const me = useRiderMe();
+  const setOnline = useSetOnline();
+  const onOffer = useCallback((_offer: DeliveryOffer) => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  }, []);
+  const offers = useRiderOffers(onOffer);
+
+  const online = me.data?.isOnline ?? false;
+  const onDelivery = !!me.data?.activeOrderId;
+
+  // Keep GPS in step with the rider's state (e.g. after an app restart).
+  useEffect(() => {
+    if (!me.data) return;
+    if (!online) void stopTracking();
+    else void startTracking(onDelivery ? "delivery" : "idle").catch(() => undefined);
+  }, [me.data, online, onDelivery]);
+
+  if (me.isPending) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color={colors.brand} />
+      </View>
+    );
+  }
+  if (!me.data?.storeId) {
+    return (
+      <EmptyState title="No store assigned" message="Ask an admin to assign you to a dark store.">
+        <Button title="Sign out" variant="secondary" size="lg" onPress={() => void signOut()} />
+      </EmptyState>
+    );
+  }
+
+  const toggle = async () => {
+    if (!online) {
+      if (!(await requestPermissions())) {
+        Alert.alert(
+          "Location needed",
+          "Allow location access 'Always' so we can offer you nearby deliveries while the app is in the background.",
+        );
+        return;
+      }
+      await startTracking("idle");
+    }
+    setOnline.mutate(!online, {
+      onSuccess: () => {
+        if (online) void stopTracking();
+      },
+      onError: (e) => Alert.alert("Couldn't update", e.message),
+    });
+  };
+
+  const offer = offers.data?.[0];
 
   return (
     <Screen scroll>
-      <View className="gap-1">
+      <View className="flex-row items-center justify-between">
         <Text className="text-3xl font-bold text-brand">Vigo Rider</Text>
-        <Text className="text-base text-muted">Signed in as {formatIndianPhone(user.phone)}</Text>
+        <LiveBadge status={offers.live} />
       </View>
-      <StatusCard
-        title="Account"
-        rows={[
-          { label: "Role", tone: "ok", value: user.role },
-          { label: "Store", tone: user.storeId ? "ok" : "pending", value: user.storeId ?? "not assigned" },
-        ]}
-      />
-      <StatusCard
-        title="Backend"
-        rows={[
-          { label: "API", tone: tone(health.data?.status), value: label(health.data?.status) },
-          { label: "Postgres", tone: tone(health.data?.database), value: label(health.data?.database) },
-          { label: "Redis", tone: tone(health.data?.redis), value: label(health.data?.redis) },
-        ]}
-      />
-      <Button title="Sign out" variant="secondary" size="lg" onPress={() => void signOut()} />
+      <Text className="text-base text-muted">
+        {me.data.storeName} · {me.data.deliveredToday} delivered today
+      </Text>
+
+      <Pressable
+        testID="online-toggle"
+        accessibilityRole="switch"
+        accessibilityState={{ checked: online }}
+        disabled={setOnline.isPending || onDelivery}
+        onPress={() => void toggle()}
+        className={`items-center gap-2 rounded-lg p-8 ${online ? "bg-brand" : "bg-surface"}`}
+      >
+        <Text className={`text-4xl font-bold ${online ? "text-white" : "text-ink"}`}>{online ? "ONLINE" : "OFFLINE"}</Text>
+        <Text className={online ? "text-white" : "text-muted"}>
+          {onDelivery ? "On a delivery" : online ? "Waiting for orders nearby — tap to go offline" : "Tap to start taking orders"}
+        </Text>
+      </Pressable>
+
+      {onDelivery ? <Button title="Continue delivery" size="lg" onPress={() => router.push("/delivery")} /> : null}
+      <Button title="Profile & history" variant="secondary" size="lg" onPress={() => router.push("/profile")} />
+      <Button title="Sign out" variant="ghost" onPress={() => void signOut()} disabled={online} />
+
+      {offer && !onDelivery ? <OfferSheet key={offer.orderId} offer={offer} /> : null}
     </Screen>
+  );
+}
+
+function LiveBadge({ status }: { status: LiveStatus }) {
+  const live = status === "open";
+  return (
+    <View className="flex-row items-center gap-2">
+      <View className={`h-3 w-3 rounded-pill ${live ? "bg-success" : "bg-warning"}`} />
+      <Text className="text-sm text-muted">{live ? "Live" : "Connecting…"}</Text>
+    </View>
   );
 }

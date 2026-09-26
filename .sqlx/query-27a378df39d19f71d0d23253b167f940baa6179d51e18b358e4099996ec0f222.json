@@ -1,0 +1,164 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT o.id AS order_id, o.number, o.store_id, s.name AS store_name, s.address AS store_address,\n               ST_Y(s.location::geometry) AS \"store_lat!\", ST_X(s.location::geometry) AS \"store_lng!\",\n               ST_Y(o.delivery_location::geometry) AS \"drop_lat!\", ST_X(o.delivery_location::geometry) AS \"drop_lng!\",\n               o.address AS \"address: Json<AddressSnapshot>\", u.phone AS customer_phone,\n               (SELECT sum(coalesce(picked_quantity, quantity)) FROM order_items i WHERE i.order_id = o.id)::int AS \"item_count!\",\n               o.bag_count, o.staging_slot,\n               o.payment_method AS \"payment_method: PaymentMethod\",\n               o.payment_status AS \"payment_status: PaymentStatus\",\n               o.total_paise, o.status AS \"status: OrderStatus\"\n        FROM orders o\n        JOIN dark_stores s ON s.id = o.store_id\n        JOIN users u ON u.id = o.user_id\n        WHERE o.id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "order_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "number",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "store_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "store_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "store_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "store_lat!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "store_lng!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 7,
+        "name": "drop_lat!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 8,
+        "name": "drop_lng!",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 9,
+        "name": "address: Json<AddressSnapshot>",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 10,
+        "name": "customer_phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "item_count!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "bag_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "staging_slot",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "payment_method: PaymentMethod",
+        "type_info": {
+          "Custom": {
+            "name": "payment_method",
+            "kind": {
+              "Enum": [
+                "COD",
+                "ONLINE"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "payment_status: PaymentStatus",
+        "type_info": {
+          "Custom": {
+            "name": "payment_status",
+            "kind": {
+              "Enum": [
+                "PENDING",
+                "PAID",
+                "FAILED",
+                "REFUNDED"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "total_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 17,
+        "name": "status: OrderStatus",
+        "type_info": {
+          "Custom": {
+            "name": "order_status",
+            "kind": {
+              "Enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PICKING",
+                "PACKED",
+                "RIDER_ASSIGNED",
+                "PICKED_UP",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "PARTIALLY_FULFILLED"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      false,
+      false,
+      null,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "27a378df39d19f71d0d23253b167f940baa6179d51e18b358e4099996ec0f222"
+}

@@ -47,6 +47,31 @@ pub struct Config {
     pub reservation_ttl: Duration,
     /// Razorpay key id + webhook secret. Online payments are off unless both are set.
     pub razorpay: Option<(String, String)>,
+    pub dispatch: DispatchConfig,
+}
+
+/// Rider dispatch tuning.
+#[derive(Debug, Clone)]
+pub struct DispatchConfig {
+    /// Only riders within this distance of the store get offers.
+    pub radius_m: f64,
+    /// How long riders have to accept an offer.
+    pub offer_ttl: Duration,
+    /// Riders offered each order at once (first to accept wins).
+    pub wave_size: usize,
+    /// Riders with no location fix for this long are skipped.
+    pub stale_after: Duration,
+}
+
+impl Default for DispatchConfig {
+    fn default() -> Self {
+        Self {
+            radius_m: 5_000.0,
+            offer_ttl: Duration::from_secs(30),
+            wave_size: 3,
+            stale_after: Duration::from_secs(60),
+        }
+    }
 }
 
 impl Config {
@@ -85,6 +110,12 @@ impl Config {
                 .collect(),
             request_timeout: Duration::from_secs(parse_or("REQUEST_TIMEOUT_SECS", 15)?),
             reservation_ttl: Duration::from_secs(parse_or("RESERVATION_TTL_SECS", 600)?),
+            dispatch: DispatchConfig {
+                radius_m: parse_or("DISPATCH_RADIUS_M", 5_000.0)?,
+                offer_ttl: Duration::from_secs(parse_or("DISPATCH_OFFER_TTL_SECS", 30)?),
+                wave_size: parse_or("DISPATCH_WAVE_SIZE", 3)?,
+                stale_after: Duration::from_secs(parse_or("RIDER_STALE_SECS", 60)?),
+            },
             razorpay: match (
                 env::var("RAZORPAY_KEY_ID").ok().filter(|s| !s.is_empty()),
                 env::var("RAZORPAY_WEBHOOK_SECRET")

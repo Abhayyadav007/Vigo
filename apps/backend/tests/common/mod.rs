@@ -73,6 +73,7 @@ impl TestApp {
                 .join(format!("vigo-test-media-{}", uuid::Uuid::new_v4())),
             reservation_ttl: Duration::from_secs(600),
             razorpay: Some((RAZORPAY_KEY.into(), RAZORPAY_WEBHOOK_SECRET.into())),
+            dispatch: backend::config::DispatchConfig::default(),
         };
         tweak(&mut config);
         let payments = Payments {

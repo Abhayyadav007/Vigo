@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT rider_id FROM deliveries\n        WHERE rider_id = ANY($1) AND delivered_at IS NULL AND ended_at IS NULL\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rider_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5b78eba642c4acc31374ab5b38dfd8792b11555bb979913a2245ba4ac8aa302b"
+}

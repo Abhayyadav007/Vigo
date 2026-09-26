@@ -14,5 +14,6 @@ pub mod health;
 pub mod order;
 pub mod page;
 pub mod picker;
+pub mod rider;
 pub mod store;
 pub mod ws;

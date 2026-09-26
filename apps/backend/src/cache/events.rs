@@ -28,3 +28,13 @@ pub async fn publish<T: Serialize>(
     }
     Ok(())
 }
+
+/// A rider's personal feed: offers, assignment changes.
+pub fn rider_channel(rider_id: Uuid) -> String {
+    format!("riders:{rider_id}")
+}
+
+/// Live rider position for an order being delivered (customer tracking).
+pub fn order_rider_channel(order_id: Uuid) -> String {
+    format!("orders:{order_id}:rider")
+}

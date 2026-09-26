@@ -1,7 +1,7 @@
 import { formatPaise, isOrderActive, useCancelOrder, useOrder } from "@vigo/api-client";
 import { Button, colors, EmptyState } from "@vigo/ui";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, ScrollView, Text, View } from "react-native";
 import { STATUS_LABEL, StatusChip } from "../../components/OrderStatus";
 
 export default function OrderScreen() {
@@ -55,6 +55,17 @@ export default function OrderScreen() {
           </View>
         ) : null}
         {o.cancelReason ? <Text className="text-sm text-danger">Cancelled: {o.cancelReason}</Text> : null}
+
+        {o.rider ? (
+          <View className="flex-row items-center justify-between rounded-lg border border-line p-4">
+            <View className="flex-1">
+              <Text className="text-sm text-muted">Your delivery partner</Text>
+              <Text className="text-base font-semibold text-ink">{o.rider.name ?? "Vigo rider"}</Text>
+              {o.rider.vehicleNumber ? <Text className="text-sm text-muted">{o.rider.vehicleNumber}</Text> : null}
+            </View>
+            <Button title="Call" variant="secondary" onPress={() => void Linking.openURL(`tel:${o.rider?.phone ?? ""}`)} />
+          </View>
+        ) : null}
 
         <View className="gap-2 rounded-lg border border-line p-4">
           {o.events.map((e, i) => (
