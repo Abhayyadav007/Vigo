@@ -14,8 +14,8 @@ use backend::{
     models::order::OrderStatus,
     services::{dispatch_service, order_service},
 };
-use common::{TestApp, admin_token, create_store, error_code, random_phone};
-use futures::{SinkExt, StreamExt};
+use common::{TestApp, admin_token, create_store, error_code, next_json, next_of, random_phone};
+use futures::SinkExt;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tokio_tungstenite::tungstenite::Message;
@@ -734,34 +734,6 @@ async fn rider_websocket_gets_offers_and_revocations(db: PgPool) {
     .await
     .unwrap();
     assert_eq!(next_json(&mut ws2).await["code"], "FORBIDDEN");
-}
-
-async fn next_of<S>(ws: &mut S, kind: &str) -> Value
-where
-    S: StreamExt<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
-{
-    loop {
-        let msg = next_json(ws).await;
-        if msg["type"] == kind {
-            return msg;
-        }
-    }
-}
-
-async fn next_json<S>(ws: &mut S) -> Value
-where
-    S: StreamExt<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin,
-{
-    loop {
-        let msg = tokio::time::timeout(Duration::from_secs(5), ws.next())
-            .await
-            .expect("timed out waiting for a message")
-            .expect("socket closed")
-            .expect("socket error");
-        if let Message::Text(text) = msg {
-            return serde_json::from_str(&text).unwrap();
-        }
-    }
 }
 
 // ---------- phase 7: live tracking + admin board ----------

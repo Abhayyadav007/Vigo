@@ -3,9 +3,4 @@
 /**
  * Pushed on `orders:{id}` (as `riderLocation`) while the order is on its way.
  */
-export type RiderLocation = {
-  orderId: string;
-  lat: number;
-  lng: number;
-  at: string;
-};
+export type RiderLocation = { orderId: string, lat: number, lng: number, at: string, };

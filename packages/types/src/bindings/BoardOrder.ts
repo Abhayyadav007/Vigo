@@ -5,15 +5,4 @@ import type { PaymentMethod } from "./PaymentMethod";
 /**
  * One card on the admin live board.
  */
-export type BoardOrder = {
-  id: string;
-  number: string;
-  status: OrderStatus;
-  storeCode: string;
-  paymentMethod: PaymentMethod;
-  totalPaise: number;
-  itemCount: number;
-  riderPhone: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export type BoardOrder = { id: string, number: string, status: OrderStatus, storeCode: string, paymentMethod: PaymentMethod, totalPaise: number, itemCount: number, riderPhone: string | null, createdAt: string, updatedAt: string, };

@@ -8,8 +8,6 @@ Vigo is a quick-commerce (10-minute grocery delivery) platform for **India only*
 
 Four clients, four roles: `mobile-customer` (CUSTOMER), `mobile-picker` (PICKER), `mobile-rider` (RIDER), `web-admin` (ADMIN).
 
-`apps/user_backend` and `packages/db` are superseded leftovers. They are excluded from both the Cargo and pnpm workspaces. Don't edit them or build on them.
-
 ## Commands
 
 Local services come from `docker compose` (Postgres 17 + PostGIS, Redis) plus the Firebase Auth emulator. `.env.example` is preconfigured for the emulator (`demo-vigo`), so no Firebase account is needed. Copy it to `.env` at the repo root; the backend finds it from any subdirectory, and the Expo apps load it through their `metro.config.js`.
@@ -45,6 +43,7 @@ pnpm e2e:auth                                          # API e2e (needs emulator
 pnpm --filter @vigo/web-admin exec playwright test -g "assign roles"   # browser e2e; runs `seed-demo` first, reuses a running Vite
 # e2e tests shell out to the backend CLI: BACKEND_CLI (default `cargo run -q -p backend --`), PROMOTE_CMD for e2e-auth.mjs
 scripts/smoke-test.sh [url]                            # black-box check of /healthz + error shape
+# e2e-*.mjs share helpers (emulator sign-in, api, check) in scripts/e2e-lib.mjs
 ```
 
 Mobile apps use `@react-native-firebase`, so they need a **dev build** (`pnpm prebuild && pnpm ios|android` in the app dir, with `firebase/GoogleService-Info.plist` / `google-services.json`, which are gitignored). Expo Go won't work. To check JS without a device, run `CI=1 npx expo export --platform ios` in the app dir.

@@ -3,15 +3,12 @@
 /**
  * `PUT /v1/admin/stores/{storeId}/inventory/{productId}` (upsert).
  */
-export type InventoryRequest = {
-  quantity: number;
-  /**
-   * Shelf address, e.g. "A-03-2".
-   */
-  binLocation?: string;
-  /**
-   * Store-specific price; omit to use the product's base price.
-   */
-  priceOverridePaise?: number;
-  isAvailable: boolean;
-};
+export type InventoryRequest = { quantity: number, 
+/**
+ * Shelf address, e.g. "A-03-2".
+ */
+binLocation?: string, 
+/**
+ * Store-specific price; omit to use the product's base price.
+ */
+priceOverridePaise?: number, isAvailable: boolean, };

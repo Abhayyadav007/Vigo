@@ -5,13 +5,8 @@ import type { VehicleType } from "./VehicleType";
 /**
  * Shown to the customer once a rider is assigned.
  */
-export type AssignedRider = {
-  name: string | null;
-  phone: string;
-  vehicleType: VehicleType;
-  vehicleNumber: string | null;
-  /**
-   * Last known position; live updates follow on `/v1/ws/orders/{id}`.
-   */
-  location: LatLng | null;
-};
+export type AssignedRider = { name: string | null, phone: string, vehicleType: VehicleType, vehicleNumber: string | null, 
+/**
+ * Last known position; live updates follow on `/v1/ws/orders/{id}`.
+ */
+location: LatLng | null, };

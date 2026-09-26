@@ -3,13 +3,4 @@
 /**
  * Address as captured on the order (JSONB snapshot).
  */
-export type AddressSnapshot = {
-  label: string;
-  line1: string;
-  line2: string | null;
-  landmark: string | null;
-  city: string;
-  pincode: string;
-  lat: number;
-  lng: number;
-};
+export type AddressSnapshot = { label: string, line1: string, line2: string | null, landmark: string | null, city: string, pincode: string, lat: number, lng: number, };

@@ -2,18 +2,8 @@
 import type { OrderStatus } from "./OrderStatus";
 import type { PickLine } from "./PickLine";
 
-export type PickList = {
-  id: string;
-  number: string;
-  status: OrderStatus;
-  pickerId: string | null;
-  isMine: boolean;
-  lines: Array<PickLine>;
-  /**
-   * Every line counted and at least one unit found.
-   */
-  canPack: boolean;
-  bagCount: number | null;
-  stagingSlot: string | null;
-  createdAt: string;
-};
+export type PickList = { id: string, number: string, status: OrderStatus, pickerId: string | null, isMine: boolean, lines: Array<PickLine>, 
+/**
+ * Every line counted and at least one unit found.
+ */
+canPack: boolean, bagCount: number | null, stagingSlot: string | null, createdAt: string, };

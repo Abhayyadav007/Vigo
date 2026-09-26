@@ -3,4 +3,4 @@
 /**
  * Client -> server. The first message must be `auth`.
  */
-export type WsClientMessage = { "type": "auth"; token: string };
+export type WsClientMessage = { "type": "auth", token: string, };

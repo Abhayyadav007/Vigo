@@ -3,9 +3,4 @@
 /**
  * One page of a list endpoint.
  */
-export type Page<T> = {
-  items: Array<T>;
-  total: number;
-  limit: number;
-  offset: number;
-};
+export type Page<T> = { items: Array<T>, total: number, limit: number, offset: number, };

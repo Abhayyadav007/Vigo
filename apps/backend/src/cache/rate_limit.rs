@@ -8,6 +8,7 @@ use deadpool_redis::{Pool, redis};
 use crate::error::{AppError, AppResult};
 
 /// Counts one hit on `key`; errors with 429 once `limit` hits land in `window`.
+/// Needs Redis 7+ (`EXPIRE ... NX`).
 /// ponytail: fixed window allows up to 2x limit across a window edge; sliding
 /// window (sorted set) if that burst ever matters.
 pub async fn check(redis: &Pool, key: &str, limit: u32, window: Duration) -> AppResult<()> {

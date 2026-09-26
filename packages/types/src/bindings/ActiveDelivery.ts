@@ -4,22 +4,8 @@ import type { LatLng } from "./LatLng";
 import type { OrderStatus } from "./OrderStatus";
 import type { PaymentMethod } from "./PaymentMethod";
 
-export type ActiveDelivery = {
-  orderId: string;
-  number: string;
-  /**
-   * RIDER_ASSIGNED (go to store), PICKED_UP / OUT_FOR_DELIVERY (go to customer).
-   */
-  status: OrderStatus;
-  storeName: string;
-  storeAddress: string;
-  storeLocation: LatLng;
-  drop: AddressSnapshot;
-  customerPhone: string;
-  itemCount: number;
-  bagCount: number | null;
-  stagingSlot: string | null;
-  paymentMethod: PaymentMethod;
-  collectPaise: number;
-  otpAttemptsLeft: number;
-};
+export type ActiveDelivery = { orderId: string, number: string, 
+/**
+ * RIDER_ASSIGNED (go to store), PICKED_UP / OUT_FOR_DELIVERY (go to customer).
+ */
+status: OrderStatus, storeName: string, storeAddress: string, storeLocation: LatLng, drop: AddressSnapshot, customerPhone: string, itemCount: number, bagCount: number | null, stagingSlot: string | null, paymentMethod: PaymentMethod, collectPaise: number, otpAttemptsLeft: number, };
