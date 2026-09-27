@@ -91,3 +91,14 @@ input.narrow { width: 96px; padding: 6px 8px; }
 tr.unstocked td { opacity: 0.65; }
 .small-btn { padding: 4px 10px; margin-left: 6px; }
 input[aria-invalid="true"] { border-color: var(--down); }
+
+/* ---- phase 7: live board ---- */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.metric { display: grid; gap: 4px; padding: 12px 16px; }
+.metric strong { font-size: 22px; }
+.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: start; }
+.column { display: grid; gap: 8px; padding: 12px; }
+.column h3 { margin: 0; font-size: 15px; }
+.order-card { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: grid; gap: 2px; }
+.order-card.late { border-color: var(--down); }
+.order-card .row { display: flex; justify-content: space-between; }

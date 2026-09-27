@@ -153,7 +153,7 @@ export default function Cart() {
             <Text className="font-semibold text-ink">Cash / UPI on delivery</Text>
             <Text className="text-sm text-muted">Pay the rider when your order arrives.</Text>
           </View>
-          {/* TODO(phase-8): online payment via the Razorpay SDK (backend flow is ready). */}
+          {/* TODO(prod): online payment via the Razorpay SDK (backend flow is ready). */}
           <Text className="text-xs text-muted">Pay online with UPI or card — coming soon.</Text>
         </View>
       </ScrollView>

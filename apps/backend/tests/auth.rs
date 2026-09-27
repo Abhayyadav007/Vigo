@@ -292,3 +292,20 @@ async fn admin_lists_and_filters_users(db: PgPool) {
         assert!(body["error"]["code"].is_string(), "{bad}: {body}");
     }
 }
+
+#[sqlx::test]
+async fn sync_is_rate_limited_per_firebase_user(db: PgPool) {
+    let app = TestApp::new(db);
+    let token = TokenBuilder::new().phone(&random_phone()).sign();
+    for i in 1..=10 {
+        let (status, _) = app
+            .request(Method::POST, "/v1/auth/sync", Some(&token), None)
+            .await;
+        assert_eq!(status, StatusCode::OK, "attempt {i}");
+    }
+    let (status, body) = app
+        .request(Method::POST, "/v1/auth/sync", Some(&token), None)
+        .await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(error_code(&body), "RATE_LIMITED");
+}

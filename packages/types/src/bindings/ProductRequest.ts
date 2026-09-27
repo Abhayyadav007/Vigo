@@ -3,22 +3,12 @@
 /**
  * `POST /v1/admin/products`, `PUT /v1/admin/products/{id}`. Prices in paise.
  */
-export type ProductRequest = {
-  categoryId: string;
-  name: string;
-  /**
-   * Derived from brand + name + unit when omitted.
-   */
-  slug?: string;
-  brand?: string;
-  description?: string;
-  /**
-   * Pack size, e.g. "500 g", "1 L".
-   */
-  unitLabel: string;
-  barcode?: string;
-  mrpPaise: number;
-  pricePaise: number;
-  imageUrls: Array<string>;
-  isActive: boolean;
-};
+export type ProductRequest = { categoryId: string, name: string, 
+/**
+ * Derived from brand + name + unit when omitted.
+ */
+slug?: string, brand?: string, description?: string, 
+/**
+ * Pack size, e.g. "500 g", "1 L".
+ */
+unitLabel: string, barcode?: string, mrpPaise: number, pricePaise: number, imageUrls: Array<string>, isActive: boolean, };

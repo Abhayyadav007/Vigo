@@ -4,10 +4,8 @@ import type { Role } from "./Role";
 /**
  * `GET /v1/admin/users` filters (plus `limit`/`offset`).
  */
-export type UserListQuery = {
-  /**
-   * Substring of the phone number, e.g. `98765`.
-   */
-  phone?: string;
-  role?: Role;
-};
+export type UserListQuery = { 
+/**
+ * Substring of the phone number, e.g. `98765`.
+ */
+phone?: string, role?: Role, };

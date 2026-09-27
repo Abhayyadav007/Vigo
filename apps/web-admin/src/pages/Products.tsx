@@ -1,7 +1,7 @@
-import { resolveMediaUrl, useApiBaseUrl, useCategories, useProducts } from "@vigo/api-client";
+import { formatPaise, resolveMediaUrl, useApiBaseUrl, useCategories, useProducts } from "@vigo/api-client";
 import { useDeferredValue, useState } from "react";
 import { Link } from "react-router";
-import { ErrorText, money, Pager } from "../components/ui";
+import { ErrorText, Pager } from "../components/ui";
 
 const LIMIT = 20;
 
@@ -74,8 +74,8 @@ export function Products() {
                   </div>
                 </td>
                 <td className="muted">{p.categoryName}</td>
-                <td className="muted">{money(p.mrpPaise)}</td>
-                <td>{money(p.pricePaise)}</td>
+                <td className="muted">{formatPaise(p.mrpPaise)}</td>
+                <td>{formatPaise(p.pricePaise)}</td>
                 <td>
                   <span className={`pill ${p.isActive ? "pill-ok" : ""}`}>{p.isActive ? "active" : "hidden"}</span>
                 </td>

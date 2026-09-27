@@ -2,10 +2,8 @@
 import type { OrderDetail } from "./OrderDetail";
 import type { RazorpayCheckout } from "./RazorpayCheckout";
 
-export type CheckoutResponse = {
-  order: OrderDetail;
-  /**
-   * Present for `ONLINE`: open the Razorpay checkout with it.
-   */
-  razorpay: RazorpayCheckout | null;
-};
+export type CheckoutResponse = { order: OrderDetail, 
+/**
+ * Present for `ONLINE`: open the Razorpay checkout with it.
+ */
+razorpay: RazorpayCheckout | null, };

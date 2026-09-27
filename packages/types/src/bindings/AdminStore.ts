@@ -2,18 +2,8 @@
 import type { GeoJsonPolygon } from "./GeoJsonPolygon";
 import type { LatLng } from "./LatLng";
 
-export type AdminStore = {
-  id: string;
-  code: string;
-  name: string;
-  address: string;
-  location: LatLng;
-  serviceArea: GeoJsonPolygon;
-  /**
-   * Square kilometres covered by `service_area`.
-   */
-  areaSqKm: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
+export type AdminStore = { id: string, code: string, name: string, address: string, location: LatLng, serviceArea: GeoJsonPolygon, 
+/**
+ * Square kilometres covered by `service_area`.
+ */
+areaSqKm: number, isActive: boolean, createdAt: string, updatedAt: string, };

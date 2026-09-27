@@ -3,4 +3,4 @@
 /**
  * `PUT /v1/customer/cart/items/{productId}`; quantity 0 removes the line.
  */
-export type SetCartItemRequest = { storeId: string; quantity: number };
+export type SetCartItemRequest = { storeId: string, quantity: number, };

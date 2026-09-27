@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH today AS (\n            SELECT * FROM orders\n            WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'\n              AND ($1::uuid IS NULL OR store_id = $1)\n        )\n        SELECT\n            (SELECT count(*) FROM today) AS \"orders!\",\n            (SELECT count(*) FROM today WHERE status IN ('DELIVERED', 'PARTIALLY_FULFILLED')) AS \"delivered!\",\n            (SELECT count(*) FROM today WHERE status = 'CANCELLED') AS \"cancelled!\",\n            (SELECT coalesce(sum(total_paise), 0) FROM today\n             WHERE status IN ('DELIVERED', 'PARTIALLY_FULFILLED'))::bigint AS \"gmv_paise!\",\n            (SELECT avg(extract(epoch FROM d.delivered_at - t.created_at) / 60)\n             FROM today t JOIN deliveries d ON d.order_id = t.id AND d.delivered_at IS NOT NULL)::float8 AS avg_delivery_minutes,\n            (SELECT count(*) FROM rider_profiles p JOIN users u ON u.id = p.user_id\n             WHERE p.is_online AND u.role = 'RIDER' AND ($1::uuid IS NULL OR u.store_id = $1)) AS \"riders_online!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "orders!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "delivered!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "cancelled!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "gmv_paise!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "avg_delivery_minutes",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "riders_online!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "ca06e124b3f4776f7d2a61f6033446c7b109fdfb4885d2207187401a19794721"
+}

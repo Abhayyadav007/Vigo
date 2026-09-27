@@ -216,3 +216,22 @@ pub async fn stock(
         .hget(keys(store_id).stock, product_id.to_string())
         .await?)
 }
+
+/// Overwrites a store's stock mirror with Postgres quantities (reconciliation).
+/// `held` is untouched: expired reservations are released by the sweeper.
+/// ponytail: a confirm/cancel racing this can leave one product off by that
+/// order's units until the next run; Postgres' conditional UPDATE still
+/// prevents overselling. Lock per store if that window ever matters.
+pub async fn resync_stock(
+    redis: &Pool,
+    store_id: Uuid,
+    levels: &[(Uuid, i32)],
+) -> Result<(), AppError> {
+    if levels.is_empty() {
+        return Ok(());
+    }
+    let mut conn = redis.get().await?;
+    let fields: Vec<(String, i32)> = levels.iter().map(|(id, q)| (id.to_string(), *q)).collect();
+    let () = conn.hset_multiple(keys(store_id).stock, &fields).await?;
+    Ok(())
+}

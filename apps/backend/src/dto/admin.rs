@@ -66,3 +66,48 @@ pub struct UpdateRoleRequest {
     #[ts(optional)]
     pub store_id: Option<Uuid>,
 }
+
+#[derive(Debug, Deserialize, Validate, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct StoreFilter {
+    #[ts(optional)]
+    pub store_id: Option<Uuid>,
+}
+
+/// One card on the admin live board.
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BoardOrder {
+    pub id: Uuid,
+    pub number: String,
+    pub status: crate::models::order::OrderStatus,
+    pub store_code: String,
+    pub payment_method: crate::models::order::PaymentMethod,
+    #[ts(type = "number")]
+    pub total_paise: i64,
+    pub item_count: i32,
+    pub rider_phone: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct Metrics {
+    #[ts(type = "number")]
+    pub orders_today: i64,
+    #[ts(type = "number")]
+    pub delivered_today: i64,
+    #[ts(type = "number")]
+    pub cancelled_today: i64,
+    /// Delivered order value today.
+    #[ts(type = "number")]
+    pub gmv_today_paise: i64,
+    /// Order placed -> delivered, averaged over today's deliveries.
+    pub avg_delivery_minutes: Option<f64>,
+    #[ts(type = "number")]
+    pub riders_online: i64,
+}

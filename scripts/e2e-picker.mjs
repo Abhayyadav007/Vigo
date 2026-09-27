@@ -7,52 +7,13 @@
 // set, and the demo seed. PROMOTE_CMD bootstraps an admin (default: cargo run).
 // Usage: node scripts/e2e-picker.mjs [backend_url]
 
-import { execFileSync } from "node:child_process";
-import { randomInt } from "node:crypto";
+import { API, api, check, finish, json, phone, promoteAdmin, signIn } from "./e2e-lib.mjs";
 
-const API = process.argv[2] ?? "http://localhost:8080";
-const EMU = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "localhost:9099"}`;
-const PROJECT = process.env.FIREBASE_PROJECT_ID ?? "demo-vigo";
-const IDT = `${EMU}/identitytoolkit.googleapis.com/v1`;
 const HOME = { lat: 12.9784, lng: 77.6408 };
-
-let failures = 0;
-function check(name, ok, detail = "") {
-  console.log(`${ok ? "ok  " : "FAIL"} ${name}${ok ? "" : `  ${detail}`}`);
-  if (!ok) failures++;
-}
-
-async function json(url, init = {}) {
-  const res = await fetch(url, { ...init, headers: { "content-type": "application/json", ...init.headers } });
-  const text = await res.text();
-  return { status: res.status, body: text ? JSON.parse(text) : null };
-}
-
-const phone = (prefix) => `+91${prefix}${String(randomInt(0, 1e8)).padStart(8, "0")}`;
-
-async function signIn(phoneNumber) {
-  const sent = await json(`${IDT}/accounts:sendVerificationCode?key=k`, {
-    method: "POST",
-    body: JSON.stringify({ phoneNumber, recaptchaToken: "x" }),
-  });
-  const codes = await json(`${EMU}/emulator/v1/projects/${PROJECT}/verificationCodes`);
-  const code = codes.body.verificationCodes.find((c) => c.sessionInfo === sent.body.sessionInfo).code;
-  const res = await json(`${IDT}/accounts:signInWithPhoneNumber?key=k`, {
-    method: "POST",
-    body: JSON.stringify({ sessionInfo: sent.body.sessionInfo, code }),
-  });
-  const token = res.body.idToken;
-  const me = await json(`${API}/v1/auth/sync`, { method: "POST", headers: { authorization: `Bearer ${token}` } });
-  return { token, me: me.body, phone: phoneNumber };
-}
-
-const api = (path, token, init = {}) =>
-  json(`${API}${path}`, { ...init, headers: { authorization: `Bearer ${token}`, ...init.headers } });
 
 // --- people: admin (bootstrapped), picker (at the serving store), customer
 const admin = await signIn(phone("97"));
-const cmd = (process.env.PROMOTE_CMD ?? "cargo run -q -p backend -- promote-admin").split(" ");
-execFileSync(cmd[0], [...cmd.slice(1), admin.phone], { stdio: "ignore" });
+promoteAdmin(admin.phone);
 
 const svc = await json(`${API}/v1/customer/serviceability?lat=${HOME.lat}&lng=${HOME.lng}`);
 const storeId = svc.body.store.id;
@@ -144,8 +105,4 @@ const seen = await api(`/v1/customer/orders/${orderId}`, customer.token);
 check("customer sees PACKED", seen.body?.status === "PACKED");
 
 ws.close();
-if (failures) {
-  console.error(`\n${failures} check(s) failed`);
-  process.exit(1);
-}
-console.log("\ne2e picker passed");
+finish("e2e picker passed");

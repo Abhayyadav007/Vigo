@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT u.name, u.phone, coalesce(p.vehicle_type, 'SCOOTER') AS \"vehicle_type!: VehicleType\",\n               p.vehicle_number\n        FROM users u LEFT JOIN rider_profiles p ON p.user_id = u.id\n        WHERE u.id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "vehicle_type!: VehicleType",
+        "type_info": {
+          "Custom": {
+            "name": "vehicle_type",
+            "kind": {
+              "Enum": [
+                "BICYCLE",
+                "SCOOTER",
+                "MOTORCYCLE",
+                "EV_SCOOTER"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "vehicle_number",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "380fad411ada5ef90f428581059246313f20143595a02810b79f5cd964f7507f"
+}

@@ -4,11 +4,4 @@ import type { OrderStatus } from "./OrderStatus";
 /**
  * Pushed on the `orders:{id}` and `stores:{storeId}:orders` Redis channels.
  */
-export type OrderStatusChanged = {
-  orderId: string;
-  storeId: string;
-  number: string;
-  from: OrderStatus | null;
-  status: OrderStatus;
-  at: string;
-};
+export type OrderStatusChanged = { orderId: string, storeId: string, number: string, from: OrderStatus | null, status: OrderStatus, at: string, };

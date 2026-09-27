@@ -2,9 +2,9 @@ import { execFileSync } from "node:child_process";
 import { randomInt } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 
-export const EMULATOR = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "localhost:9099"}`;
-export const PROJECT = process.env.FIREBASE_PROJECT_ID ?? "demo-vigo";
-export const API = process.env.VITE_API_URL ?? "http://localhost:8080";
+const EMULATOR = `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "localhost:9099"}`;
+const PROJECT = process.env.FIREBASE_PROJECT_ID ?? "demo-vigo";
+const API = process.env.VITE_API_URL ?? "http://localhost:8080";
 // The backend CLI (promote-admin, seed-demo), run from the repo root.
 const BACKEND = (process.env.BACKEND_CLI ?? "cargo run -q -p backend --").split(" ");
 
@@ -20,7 +20,7 @@ export function backendCli(...args: string[]) {
 export const uniquePhone = (prefix: string) => `${prefix}${randomInt(0, 100_000_000).toString().padStart(8, "0")}`;
 
 /** Newest OTP the emulator "sent" to this number. */
-export async function latestOtp(phoneE164: string): Promise<string> {
+async function latestOtp(phoneE164: string): Promise<string> {
   const res = await fetch(`${EMULATOR}/emulator/v1/projects/${PROJECT}/verificationCodes`);
   const { verificationCodes } = (await res.json()) as {
     verificationCodes: { phoneNumber: string; code: string }[];

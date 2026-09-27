@@ -1,7 +1,12 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::order::OrderStatusChanged;
+use uuid::Uuid;
+
+use super::{
+    order::OrderStatusChanged,
+    rider::{DeliveryOffer, RiderLocation},
+};
 
 /// Client -> server. The first message must be `auth`.
 #[derive(Debug, Deserialize, TS)]
@@ -21,6 +26,15 @@ pub enum WsServerMessage {
     Ready,
     /// An order changed status.
     Order { event: OrderStatusChanged },
+    /// Riders: a delivery is offered to you; accept before `expiresAt`.
+    Offer { offer: DeliveryOffer },
+    /// Riders: that offer is gone (someone else accepted, or it was cancelled).
+    OfferRevoked {
+        #[serde(rename = "orderId")]
+        order_id: Uuid,
+    },
+    /// Customers/admins: the rider carrying this order moved.
+    RiderLocation { location: RiderLocation },
     /// Messages were dropped (slow client); refetch current state.
     Resync,
     /// Fatal; the server closes the socket after sending it.

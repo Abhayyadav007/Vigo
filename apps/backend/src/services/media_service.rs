@@ -19,7 +19,7 @@ pub enum MediaStore {
     /// Files on local disk, served at `/media/...`. Fine for dev and a single
     /// instance; not shared across instances.
     Local { dir: PathBuf },
-    // TODO(phase-8): S3-compatible object storage (Cloudflare R2) for production.
+    // TODO(prod): S3-compatible object storage (Cloudflare R2) for production.
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,7 +81,7 @@ pub async fn save_image(state: &AppState, bytes: &[u8]) -> AppResult<String> {
         kind.extension()
     );
 
-    // TODO(phase-8): garbage-collect uploads that no product/category references.
+    // TODO(prod): garbage-collect uploads that no product/category references.
     match state.media.as_ref() {
         MediaStore::Local { dir } => {
             let path = dir.join(&key);

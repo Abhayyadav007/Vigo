@@ -4,20 +4,4 @@
  * A product as seen from one store; `stocked` is false when the store has no
  * inventory row for it yet (then the inventory fields are defaults).
  */
-export type InventoryItem = {
-  productId: string;
-  productName: string;
-  brand: string | null;
-  unitLabel: string;
-  barcode: string | null;
-  imageUrl: string | null;
-  categoryName: string;
-  mrpPaise: number;
-  basePricePaise: number;
-  stocked: boolean;
-  quantity: number;
-  binLocation: string | null;
-  priceOverridePaise: number | null;
-  isAvailable: boolean;
-  updatedAt: string | null;
-};
+export type InventoryItem = { productId: string, productName: string, brand: string | null, unitLabel: string, barcode: string | null, imageUrl: string | null, categoryName: string, mrpPaise: number, basePricePaise: number, stocked: boolean, quantity: number, binLocation: string | null, priceOverridePaise: number | null, isAvailable: boolean, updatedAt: string | null, };

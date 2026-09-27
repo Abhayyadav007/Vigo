@@ -3,4 +3,4 @@
 /**
  * Manually set a line's count: for unlabelled items, or to mark units missing.
  */
-export type SetPickedRequest = { pickedQuantity: number };
+export type SetPickedRequest = { pickedQuantity: number, };

@@ -4,11 +4,4 @@ import type { Role } from "./Role";
 /**
  * The signed-in user, as returned by `/v1/auth/sync` and `/v1/auth/me`.
  */
-export type MeResponse = {
-  id: string;
-  phone: string;
-  name: string | null;
-  role: Role;
-  storeId: string | null;
-  createdAt: string;
-};
+export type MeResponse = { id: string, phone: string, name: string | null, role: Role, storeId: string | null, createdAt: string, };

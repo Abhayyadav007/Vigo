@@ -1,5 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
+  BoardOrder,
+  Metrics,
   AdminCategory,
   AdminProduct,
   AdminStore,
@@ -14,7 +16,9 @@ import type {
   StoreRequest,
   UploadResponse,
 } from "@vigo/types";
+import { useCallback } from "react";
 import { useApiClient } from "../context";
+import { useLiveEvents } from "./useLiveEvents";
 
 interface Paging {
   limit?: number;
@@ -164,4 +168,28 @@ export function useUploadImage() {
       return (await client.post<UploadResponse>("/v1/admin/uploads", form)).data.url;
     },
   });
+}
+
+// ---------- live board ----------
+
+/** Orders in flight plus today's metrics, refreshed on every `/v1/ws/admin` event. */
+export function useLiveBoard(storeId?: string) {
+  const client = useApiClient();
+  const qc = useQueryClient();
+  const params = storeId ? { storeId } : {};
+  const board = useQuery({
+    queryKey: ["admin", "board", storeId ?? null],
+    queryFn: async () => (await client.get<BoardOrder[]>("/v1/admin/orders", { params })).data,
+  });
+  const metrics = useQuery({
+    queryKey: ["admin", "metrics", storeId ?? null],
+    queryFn: async () => (await client.get<Metrics>("/v1/admin/metrics", { params })).data,
+    refetchInterval: 60_000,
+  });
+  const onMessage = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: ["admin", "board"] });
+    void qc.invalidateQueries({ queryKey: ["admin", "metrics"] });
+  }, [qc]);
+  const live = useLiveEvents("/v1/ws/admin", onMessage);
+  return { board, metrics, live };
 }

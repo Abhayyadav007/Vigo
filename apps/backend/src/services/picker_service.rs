@@ -19,7 +19,7 @@ use crate::{
         orders,
         picking::{self, PickHeader, PickLineRow, ScanOutcome},
     },
-    services::order_service,
+    services::{dispatch_service, order_service},
     state::AppState,
 };
 
@@ -355,8 +355,9 @@ pub async fn pack(
             tracing::error!(%error, "zeroing Redis stock after a shortage failed");
         }
     }
-    // TODO(phase-8): partial refund for prepaid orders with shortages.
+    // TODO(prod): partial refund for prepaid orders with shortages.
     order_service::publish_status(state, id, prev, OrderStatus::Packed).await;
+    dispatch_service::dispatch_best_effort(state, id).await;
     pick_list(state, picker, id).await
 }
 

@@ -26,7 +26,7 @@ export function PolygonEditor(props: PolygonEditorProps) {
   return (
     <div className="map" data-testid="store-map">
       <MapContainer center={center} zoom={props.location ? 13 : 5} scrollWheelZoom style={{ height: "100%" }}>
-        {/* TODO(phase-8): OSM's public tiles are for light dev use; switch to a tile provider for production. */}
+        {/* TODO(prod): OSM's public tiles are for light dev use; switch to a tile provider for production. */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"

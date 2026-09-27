@@ -4,7 +4,4 @@ import type { PolygonType } from "./PolygonType";
 /**
  * A GeoJSON Polygon: one outer ring of `[lng, lat]` positions (no holes).
  */
-export type GeoJsonPolygon = {
-  type: PolygonType;
-  coordinates: Array<Array<[number, number]>>;
-};
+export type GeoJsonPolygon = { type: PolygonType, coordinates: Array<Array<[number, number]>>, };

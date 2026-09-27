@@ -16,8 +16,6 @@ export default tseslint.config(
       "**/playwright-report/**",
       "packages/types/src/bindings/**",
       "apps/backend/**",
-      "apps/user_backend/**",
-      "packages/db/**",
       "target/**",
     ],
   },

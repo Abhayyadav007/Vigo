@@ -2,14 +2,12 @@
 import type { PickLine } from "./PickLine";
 import type { PickList } from "./PickList";
 
-export type ScanResult = {
-  /**
-   * The line the scan counted towards.
-   */
-  line: PickLine;
-  /**
-   * True when this scan completed the line.
-   */
-  lineComplete: boolean;
-  pickList: PickList;
-};
+export type ScanResult = { 
+/**
+ * The line the scan counted towards.
+ */
+line: PickLine, 
+/**
+ * True when this scan completed the line.
+ */
+lineComplete: boolean, pickList: PickList, };

@@ -6,3 +6,4 @@ pub mod customer;
 pub mod health;
 pub mod payments;
 pub mod picker;
+pub mod rider;

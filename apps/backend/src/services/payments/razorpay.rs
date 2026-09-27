@@ -42,7 +42,7 @@ impl PaymentProvider for Razorpay {
     }
 
     async fn initiate(&self, order: &Order) -> AppResult<PaymentInit> {
-        // TODO(phase-8): create the order with Razorpay's Orders API
+        // TODO(prod): create the order with Razorpay's Orders API
         // (POST https://api.razorpay.com/v1/orders, amount in paise, receipt =
         // order number, idempotent on our order id) and use its id here.
         let gateway_order_id = format!("order_stub{}", &order.id.simple().to_string()[..14]);

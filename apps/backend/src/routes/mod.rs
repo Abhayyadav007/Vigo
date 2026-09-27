@@ -9,6 +9,7 @@ mod auth;
 mod customer;
 mod payments;
 mod picker;
+mod rider;
 mod ws;
 
 pub fn router() -> Router<AppState> {
@@ -19,12 +20,12 @@ pub fn router() -> Router<AppState> {
 }
 
 fn v1() -> Router<AppState> {
-    // TODO(phase-6): rider router.
     Router::new()
         .nest("/auth", auth::router())
         .nest("/customer", customer::router())
         .nest("/admin", admin::router())
         .nest("/payments", payments::router())
         .nest("/picker", picker::router())
+        .nest("/rider", rider::router())
         .nest("/ws", ws::router())
 }

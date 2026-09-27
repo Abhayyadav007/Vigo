@@ -15,7 +15,7 @@ export default function RootLayout() {
     <ApiClientProvider client={apiClient}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider adapter={firebaseAuth.adapter} client={apiClient} requiredRole="PICKER">
-          <StatusBar style="auto" />
+          <StatusBar style="dark" />
           <RootStack />
         </AuthProvider>
       </QueryClientProvider>

@@ -24,6 +24,8 @@ use crate::{
         order::OrderStatusChanged,
         ws::{WsClientMessage, WsServerMessage},
     },
+    extractors::PathParam,
+    repositories::orders,
     services::auth_service,
     state::AppState,
 };
@@ -41,10 +43,35 @@ pub async fn picker(ws: WebSocketUpgrade, State(state): State<AppState>) -> Resp
     ws.on_upgrade(move |socket| session(socket, state, Audience::StoreStaff(Role::Picker)))
 }
 
+/// `GET /v1/ws/rider`: the rider's own feed (offers, their orders' status).
+pub async fn rider(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
+    ws.on_upgrade(move |socket| session(socket, state, Audience::Rider))
+}
+
+/// `GET /v1/ws/orders/{id}`: live status + rider position for the customer's own order.
+pub async fn order(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+    PathParam(id): PathParam<Uuid>,
+) -> Response {
+    ws.on_upgrade(move |socket| session(socket, state, Audience::Order(id)))
+}
+
+/// `GET /v1/ws/admin`: every order event, for the live board.
+pub async fn admin(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
+    ws.on_upgrade(move |socket| session(socket, state, Audience::Admin))
+}
+
 #[derive(Clone, Copy)]
 enum Audience {
-    /// Staff of one store (picker now, rider in phase 6): their store's feed.
+    /// Staff of one store: their store's order feed.
     StoreStaff(Role),
+    /// A rider (with a store): their personal channel.
+    Rider,
+    /// A customer watching one of their orders.
+    Order(Uuid),
+    /// Admins: all orders.
+    Admin,
 }
 
 struct Authed {
@@ -79,15 +106,19 @@ async fn session(mut socket: WebSocket, state: AppState, audience: Audience) {
     loop {
         tokio::select! {
             msg = sub.recv() => {
-                let out = match msg {
+                let sent = match msg {
                     Ok(payload) => match serde_json::from_str::<OrderStatusChanged>(&payload) {
-                        Ok(event) => WsServerMessage::Order { event },
+                        Ok(event) => send(&mut socket, &WsServerMessage::Order { event }).await,
+                        // Already a `WsServerMessage` (rider offers): pass through.
+                        Err(_) if payload.starts_with("{\"type\"") => {
+                            socket.send(Message::Text(Utf8Bytes::from(payload.as_ref()))).await
+                        }
                         Err(_) => continue,
                     },
-                    Err(RecvError::Lagged(_)) => WsServerMessage::Resync,
+                    Err(RecvError::Lagged(_)) => send(&mut socket, &WsServerMessage::Resync).await,
                     Err(RecvError::Closed) => break,
                 };
-                if send(&mut socket, &out).await.is_err() {
+                if sent.is_err() {
                     break;
                 }
             }
@@ -138,6 +169,28 @@ async fn authenticate(
             let store = session.store_id.filter(|_| session.role == role);
             let store: Uuid = store.ok_or((CLOSE_FORBIDDEN, "not allowed"))?;
             events::store_channel(store)
+        }
+        Audience::Rider => {
+            if session.role != Role::Rider || session.store_id.is_none() {
+                return Err((CLOSE_FORBIDDEN, "not allowed"));
+            }
+            events::rider_channel(session.user_id)
+        }
+        Audience::Order(id) => {
+            let owner = orders::find(&state.db, id)
+                .await
+                .map_err(|_| (CLOSE_FORBIDDEN, "not allowed"))?
+                .map(|o| o.user_id);
+            if owner != Some(session.user_id) {
+                return Err((CLOSE_FORBIDDEN, "not allowed"));
+            }
+            events::order_channel(id)
+        }
+        Audience::Admin => {
+            if session.role != Role::Admin {
+                return Err((CLOSE_FORBIDDEN, "not allowed"));
+            }
+            events::admin_channel()
         }
     };
     let secs_left = (claims.exp - Utc::now().timestamp()).max(0);

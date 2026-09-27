@@ -372,3 +372,81 @@ pub async fn active_store_ids<'e>(db: impl PgExecutor<'e>) -> Result<Vec<Uuid>, 
         .fetch_all(db)
         .await
 }
+
+pub struct BoardRow {
+    pub id: Uuid,
+    pub number: i64,
+    pub status: OrderStatus,
+    pub store_code: String,
+    pub payment_method: PaymentMethod,
+    pub total_paise: i64,
+    pub item_count: i32,
+    pub rider_phone: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Orders still in flight, oldest first (admin live board).
+pub async fn board<'e>(
+    db: impl PgExecutor<'e>,
+    store: Option<Uuid>,
+) -> Result<Vec<BoardRow>, sqlx::Error> {
+    sqlx::query_as!(
+        BoardRow,
+        r#"
+        SELECT o.id, o.number, o.status AS "status: OrderStatus", s.code AS store_code,
+               o.payment_method AS "payment_method: PaymentMethod", o.total_paise,
+               (SELECT sum(quantity) FROM order_items i WHERE i.order_id = o.id)::int AS "item_count!",
+               (SELECT u.phone FROM deliveries d JOIN users u ON u.id = d.rider_id
+                WHERE d.order_id = o.id AND d.delivered_at IS NULL AND d.ended_at IS NULL) AS rider_phone,
+               o.created_at, o.updated_at
+        FROM orders o JOIN dark_stores s ON s.id = o.store_id
+        WHERE o.status NOT IN ('DELIVERED', 'CANCELLED', 'PARTIALLY_FULFILLED')
+          AND ($1::uuid IS NULL OR o.store_id = $1)
+        ORDER BY o.created_at, o.id
+        LIMIT 500
+        "#,
+        store,
+    )
+    .fetch_all(db)
+    .await
+}
+
+pub struct MetricsRow {
+    pub orders: i64,
+    pub delivered: i64,
+    pub cancelled: i64,
+    pub gmv_paise: i64,
+    pub avg_delivery_minutes: Option<f64>,
+    pub riders_online: i64,
+}
+
+/// Today's numbers (India time), optionally for one store.
+pub async fn metrics_today<'e>(
+    db: impl PgExecutor<'e>,
+    store: Option<Uuid>,
+) -> Result<MetricsRow, sqlx::Error> {
+    sqlx::query_as!(
+        MetricsRow,
+        r#"
+        WITH today AS (
+            SELECT * FROM orders
+            WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'
+              AND ($1::uuid IS NULL OR store_id = $1)
+        )
+        SELECT
+            (SELECT count(*) FROM today) AS "orders!",
+            (SELECT count(*) FROM today WHERE status IN ('DELIVERED', 'PARTIALLY_FULFILLED')) AS "delivered!",
+            (SELECT count(*) FROM today WHERE status = 'CANCELLED') AS "cancelled!",
+            (SELECT coalesce(sum(total_paise), 0) FROM today
+             WHERE status IN ('DELIVERED', 'PARTIALLY_FULFILLED'))::bigint AS "gmv_paise!",
+            (SELECT avg(extract(epoch FROM d.delivered_at - t.created_at) / 60)
+             FROM today t JOIN deliveries d ON d.order_id = t.id AND d.delivered_at IS NOT NULL)::float8 AS avg_delivery_minutes,
+            (SELECT count(*) FROM rider_profiles p JOIN users u ON u.id = p.user_id
+             WHERE p.is_online AND u.role = 'RIDER' AND ($1::uuid IS NULL OR u.store_id = $1)) AS "riders_online!"
+        "#,
+        store,
+    )
+    .fetch_one(db)
+    .await
+}

@@ -1,7 +1,9 @@
-//! Redis access. `geo` (rider locations) arrives in phase 6.
+//! Redis access.
 
 pub mod events;
+pub mod geo;
 pub mod inventory;
+pub mod rate_limit;
 pub mod session;
 
 use deadpool_redis::{Pool, redis};

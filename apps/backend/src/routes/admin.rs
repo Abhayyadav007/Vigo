@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    handlers::admin::{catalog, inventory, staff, stores, uploads},
+    handlers::admin::{catalog, inventory, orders, staff, stores, uploads},
     services::media_service::MAX_IMAGE_BYTES,
     state::AppState,
 };
@@ -13,6 +13,8 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/users", get(staff::list_users))
+        .route("/orders", get(orders::board))
+        .route("/metrics", get(orders::metrics))
         .route("/users/{id}/role", patch(staff::update_role))
         .route("/stores", get(stores::list).post(stores::create))
         .route("/stores/{id}", get(stores::get).put(stores::update))

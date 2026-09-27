@@ -3,16 +3,8 @@ import type { OrderStatus } from "./OrderStatus";
 import type { PaymentMethod } from "./PaymentMethod";
 import type { PaymentStatus } from "./PaymentStatus";
 
-export type OrderSummary = {
-  id: string;
-  /**
-   * Display number, e.g. `VG100001`.
-   */
-  number: string;
-  status: OrderStatus;
-  paymentMethod: PaymentMethod;
-  paymentStatus: PaymentStatus;
-  totalPaise: number;
-  itemCount: number;
-  createdAt: string;
-};
+export type OrderSummary = { id: string, 
+/**
+ * Display number, e.g. `VG100001`.
+ */
+number: string, status: OrderStatus, paymentMethod: PaymentMethod, paymentStatus: PaymentStatus, totalPaise: number, itemCount: number, createdAt: string, };

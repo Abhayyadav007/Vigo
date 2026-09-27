@@ -4,21 +4,12 @@ import type { OrderStatus } from "./OrderStatus";
 /**
  * One order in the store's picking queue.
  */
-export type PickerQueueItem = {
-  id: string;
-  number: string;
-  /**
-   * CONFIRMED (waiting), PICKING, or PACKED (waiting for a rider).
-   */
-  status: OrderStatus;
-  itemCount: number;
-  lineCount: number;
-  /**
-   * Lines the picker has counted (found or marked missing).
-   */
-  linesDone: number;
-  pickerId: string | null;
-  isMine: boolean;
-  stagingSlot: string | null;
-  createdAt: string;
-};
+export type PickerQueueItem = { id: string, number: string, 
+/**
+ * CONFIRMED (waiting), PICKING, or PACKED (waiting for a rider).
+ */
+status: OrderStatus, itemCount: number, lineCount: number, 
+/**
+ * Lines the picker has counted (found or marked missing).
+ */
+linesDone: number, pickerId: string | null, isMine: boolean, stagingSlot: string | null, createdAt: string, };
