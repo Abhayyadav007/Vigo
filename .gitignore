@@ -41,3 +41,4 @@ apps/web-admin/playwright-report/
 # Local media uploads (MEDIA_DIR)
 /media/
 apps/backend/media/
+dump.rdb
