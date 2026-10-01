@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Vigo is a quick-commerce (10-minute grocery delivery) platform for **India only**: phone numbers are `+91` mobiles (enforced in the backend and in a DB `CHECK`), money is INR stored as `BIGINT` paise, and payments are UPI-first (Razorpay). It is a monorepo built in 8 numbered phases (all built; see git history). What's left is marked `TODO(prod):`: work that needs a third-party account (Razorpay live Orders API/SDK and refunds, R2 storage, phone-number masking, a map tile provider) or isn't needed yet (upload GC). Don't stub anything silently.
 
-Four clients, four roles: `mobile-customer` (CUSTOMER), `mobile-picker` (PICKER), `mobile-rider` (RIDER), `web-admin` (ADMIN).
+Four clients: `mobile-customer` (CUSTOMER), `mobile-picker` (PICKER), `mobile-rider` (RIDER), `web-admin` (back office: ADMIN = Super Admin, STORE_MANAGER, CATALOG_MANAGER, SUPPORT_AGENT; `apps/web-admin/src/lib/roles.ts` maps roles to pages).
 
 ## Commands
 
@@ -112,7 +112,7 @@ Map unique/FK violations to client errors with `error::map_constraint(e, &[(cons
 **Auth flow.** Postgres is the source of truth for roles; the token only proves identity.
 1. `FirebaseIdentity` verifies the Bearer Firebase ID token (`auth/firebase.rs`). It uses RS256 against Google's JWKS, cached per `Cache-Control: max-age`, and refetches on an unknown `kid` at most every 30s. A JWKS outage returns 503, not 401. Only `/v1/auth/sync` uses this extractor directly, because it creates users (new users are always `CUSTOMER`, and a phone that reappears under a new UID is re-linked).
 2. `AuthUser` = verified token + session lookup: Redis `session:v1:{firebase_uid}`, falling back to Postgres. Unknown user → 403 `USER_NOT_REGISTERED`; disabled user → 403 `ACCOUNT_DISABLED`.
-3. `RequireRole<R>` guards are aliased as `Customer`, `Picker`, `Rider` and `Admin`. Put the guard in the handler signature.
+3. `RequireRole<R>` guards accept a set of roles and are aliased as `Customer`, `Picker`, `Rider`, `Admin` (Super Admin only), `CatalogStaff`, `StoreStaff`, `OrderStaff` and `BackOffice` (`extractors/role_guard.rs`). Put the guard in the handler signature. Store managers are scoped to `users.store_id`: call `user.ensure_store(id)` or `user.scoped_store_filter(q.store_id)` in any handler a manager can reach (another store answers 404).
 4. Any change to a user's role, `store_id` or `is_active` **must** call `auth_service::invalidate_best_effort`. Otherwise the old role survives until the cache TTL runs out.
 5. `FIREBASE_AUTH_EMULATOR_HOST` switches to accepting unsigned emulator tokens. `Config::from_env` refuses this when `APP_ENV=production`. Tests use `FirebaseVerifier::with_static_keys`, and `tests/common` signs real RS256 tokens with keys from `tests/fixtures`.
 

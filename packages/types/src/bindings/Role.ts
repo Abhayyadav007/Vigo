@@ -3,4 +3,4 @@
 /**
  * Account role. Stored in Postgres (`user_role` enum), never taken from the token.
  */
-export type Role = "CUSTOMER" | "PICKER" | "RIDER" | "ADMIN";
+export type Role = "CUSTOMER" | "PICKER" | "RIDER" | "ADMIN" | "STORE_MANAGER" | "CATALOG_MANAGER" | "SUPPORT_AGENT";

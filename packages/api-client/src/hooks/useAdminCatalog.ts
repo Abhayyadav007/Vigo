@@ -12,6 +12,8 @@ import type {
   Page,
   ProductListQuery,
   ProductRequest,
+  AdminCancelRequest,
+  StoreActiveRequest,
   StoreListQuery,
   StoreRequest,
   UploadResponse,
@@ -63,6 +65,17 @@ export function useSaveStore() {
       id
         ? (await client.put<AdminStore>(`/v1/admin/stores/${id}`, body)).data
         : (await client.post<AdminStore>("/v1/admin/stores", body)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminCatalogKeys.stores }),
+  });
+}
+
+/** `PATCH /v1/admin/stores/{id}/active`: open or close a store (super admin or its manager). */
+export function useSetStoreActive() {
+  const client = useApiClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: StoreActiveRequest }) =>
+      (await client.patch<AdminStore>(`/v1/admin/stores/${id}/active`, body)).data,
     onSuccess: () => qc.invalidateQueries({ queryKey: adminCatalogKeys.stores }),
   });
 }
@@ -171,6 +184,21 @@ export function useUploadImage() {
 }
 
 // ---------- live board ----------
+
+/** `POST /v1/admin/orders/{id}/cancel` (support, store managers, super admins). */
+export function useStaffCancelOrder() {
+  const client = useApiClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: AdminCancelRequest }) => {
+      await client.post(`/v1/admin/orders/${id}/cancel`, body);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["admin", "board"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "metrics"] });
+    },
+  });
+}
 
 /** Orders in flight plus today's metrics, refreshed on every `/v1/ws/admin` event. */
 export function useLiveBoard(storeId?: string) {

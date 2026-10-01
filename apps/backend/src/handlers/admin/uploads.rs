@@ -7,7 +7,7 @@ use axum::{
 use crate::{
     dto::catalog::UploadResponse,
     error::{AppError, AppResult},
-    extractors::Admin,
+    extractors::CatalogStaff,
     services::media_service,
     state::AppState,
 };
@@ -16,7 +16,7 @@ use crate::{
 /// put in `imageUrls` / `imageUrl`.
 pub async fn upload_image(
     State(state): State<AppState>,
-    _admin: Admin,
+    _staff: CatalogStaff,
     mut multipart: Multipart,
 ) -> AppResult<(StatusCode, Json<UploadResponse>)> {
     while let Some(field) = multipart.next_field().await.map_err(multipart_error)? {

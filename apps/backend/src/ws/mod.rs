@@ -57,7 +57,7 @@ pub async fn order(
     ws.on_upgrade(move |socket| session(socket, state, Audience::Order(id)))
 }
 
-/// `GET /v1/ws/admin`: every order event, for the live board.
+/// `GET /v1/ws/admin`: order events for the live board (a store manager gets only their store).
 pub async fn admin(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
     ws.on_upgrade(move |socket| session(socket, state, Audience::Admin))
 }
@@ -70,7 +70,7 @@ enum Audience {
     Rider,
     /// A customer watching one of their orders.
     Order(Uuid),
-    /// Admins: all orders.
+    /// The admin board: all orders (admins, support) or one store (managers).
     Admin,
 }
 
@@ -186,12 +186,15 @@ async fn authenticate(
             }
             events::order_channel(id)
         }
-        Audience::Admin => {
-            if session.role != Role::Admin {
-                return Err((CLOSE_FORBIDDEN, "not allowed"));
+        Audience::Admin => match session.role {
+            Role::Admin | Role::SupportAgent => events::admin_channel(),
+            // Managers watch their own store's feed (same message shape).
+            Role::StoreManager => {
+                let store = session.store_id.ok_or((CLOSE_FORBIDDEN, "not allowed"))?;
+                events::store_channel(store)
             }
-            events::admin_channel()
-        }
+            _ => return Err((CLOSE_FORBIDDEN, "not allowed")),
+        },
     };
     let secs_left = (claims.exp - Utc::now().timestamp()).max(0);
     Ok(Authed {

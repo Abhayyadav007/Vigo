@@ -1,6 +1,10 @@
-import { formatPaise, useHealth, useLiveBoard, useStores } from "@vigo/api-client";
+import { formatPaise, useHealth, useLiveBoard, useStaffCancelOrder, useStores } from "@vigo/api-client";
 import type { BoardOrder, OrderStatus } from "@vigo/types";
 import { useState } from "react";
+import { ErrorText } from "../components/ui";
+
+// Statuses staff may still cancel from (mirrors the backend state machine).
+const CANCELLABLE: OrderStatus[] = ["PLACED", "CONFIRMED", "PICKING", "PACKED", "RIDER_ASSIGNED"];
 
 const COLUMNS: [string, OrderStatus[]][] = [
   ["New", ["PLACED", "CONFIRMED"]],
@@ -89,6 +93,29 @@ function OrderCard({ order: o }: { order: BoardOrder }) {
       </div>
       <div className="small">{o.status.replaceAll("_", " ").toLowerCase()}</div>
       {o.riderPhone ? <div className="muted small">Rider {o.riderPhone}</div> : null}
+      {CANCELLABLE.includes(o.status) ? <CancelButton order={o} /> : null}
     </div>
+  );
+}
+
+function CancelButton({ order }: { order: BoardOrder }) {
+  const cancel = useStaffCancelOrder();
+  return (
+    <>
+      <button
+        type="button"
+        className="btn secondary small-btn"
+        disabled={cancel.isPending}
+        onClick={() => {
+          const reason = window.prompt(
+            `Cancel ${order.number}? ${order.paymentMethod === "COD" ? "" : "Prepaid orders are marked for refund. "}Reason:`,
+          );
+          if (reason?.trim()) cancel.mutate({ id: order.id, body: { reason: reason.trim() } });
+        }}
+      >
+        Cancel order
+      </button>
+      <ErrorText error={cancel.error} />
+    </>
   );
 }

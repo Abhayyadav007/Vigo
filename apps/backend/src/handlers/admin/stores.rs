@@ -4,22 +4,35 @@ use uuid::Uuid;
 use crate::{
     dto::{
         page::Page,
-        store::{AdminStore, StoreListQuery, StoreRequest},
+        store::{AdminStore, StoreActiveRequest, StoreListQuery, StoreRequest},
     },
     error::{AppError, AppResult},
-    extractors::{Admin, Pagination, PathParam, ValidJson, ValidQuery},
+    extractors::{Admin, BackOffice, Pagination, PathParam, StoreStaff, ValidJson, ValidQuery},
     repositories::stores,
     services::store_service,
     state::AppState,
 };
 
-/// `GET /v1/admin/stores`
+/// `GET /v1/admin/stores` (a store manager sees only their own store)
 pub async fn list(
     State(state): State<AppState>,
-    _admin: Admin,
+    user: BackOffice,
     page: Pagination,
     ValidQuery(query): ValidQuery<StoreListQuery>,
 ) -> AppResult<Json<Page<AdminStore>>> {
+    if let Some(own) = user.store_scope() {
+        let items: Vec<AdminStore> = stores::find(&state.db, own)
+            .await?
+            .into_iter()
+            .map(AdminStore::from)
+            .collect();
+        return Ok(Json(Page {
+            total: items.len() as i64,
+            items,
+            limit: page.limit,
+            offset: page.offset,
+        }));
+    }
     let (items, total) =
         stores::list(&state.db, query.q.as_deref(), page.limit, page.offset).await?;
     Ok(Json(Page {
@@ -33,9 +46,10 @@ pub async fn list(
 /// `GET /v1/admin/stores/{id}`
 pub async fn get(
     State(state): State<AppState>,
-    _admin: Admin,
+    user: BackOffice,
     PathParam(id): PathParam<Uuid>,
 ) -> AppResult<Json<AdminStore>> {
+    user.ensure_store(id)?;
     let store = stores::find(&state.db, id)
         .await?
         .ok_or(AppError::NotFound("store"))?;
@@ -60,4 +74,17 @@ pub async fn update(
     ValidJson(body): ValidJson<StoreRequest>,
 ) -> AppResult<Json<AdminStore>> {
     Ok(Json(store_service::update(&state, id, body).await?.into()))
+}
+
+/// `PATCH /v1/admin/stores/{id}/active`: open or close a store.
+pub async fn set_active(
+    State(state): State<AppState>,
+    user: StoreStaff,
+    PathParam(id): PathParam<Uuid>,
+    ValidJson(body): ValidJson<StoreActiveRequest>,
+) -> AppResult<Json<AdminStore>> {
+    user.ensure_store(id)?;
+    let store = store_service::set_active(&state, id, body.is_active).await?;
+    tracing::info!(actor = %user.user_id, store_id = %id, is_active = body.is_active, "store switched");
+    Ok(Json(store.into()))
 }

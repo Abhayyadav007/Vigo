@@ -33,6 +33,14 @@ pub async fn update(state: &AppState, id: Uuid, req: StoreRequest) -> AppResult<
         .ok_or(AppError::NotFound("store"))
 }
 
+/// Opens or closes a store without touching its area (store manager's switch).
+/// A closed store stops being serviceable and its catalog disappears.
+pub async fn set_active(state: &AppState, id: Uuid, is_active: bool) -> AppResult<DarkStore> {
+    stores::set_active(&state.db, id, is_active)
+        .await?
+        .ok_or(AppError::NotFound("store"))
+}
+
 struct Validated {
     polygon: crate::dto::geo::GeoJsonPolygon,
 }

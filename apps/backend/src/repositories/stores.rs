@@ -104,6 +104,29 @@ pub async fn update<'e>(
     .await
 }
 
+pub async fn set_active<'e>(
+    db: impl PgExecutor<'e>,
+    id: Uuid,
+    is_active: bool,
+) -> Result<Option<DarkStore>, sqlx::Error> {
+    sqlx::query_as!(
+        DarkStore,
+        r#"
+        UPDATE dark_stores SET is_active = $2
+        WHERE id = $1
+        RETURNING id, code, name, address,
+                  ST_Y(location::geometry) AS "lat!", ST_X(location::geometry) AS "lng!",
+                  ST_AsGeoJSON(service_area, 7)::jsonb AS "service_area!: Json<GeoJsonPolygon>",
+                  ST_Area(service_area) AS "area_sq_m!",
+                  is_active, created_at, updated_at
+        "#,
+        id,
+        is_active,
+    )
+    .fetch_optional(db)
+    .await
+}
+
 pub async fn find<'e>(db: impl PgExecutor<'e>, id: Uuid) -> Result<Option<DarkStore>, sqlx::Error> {
     sqlx::query_as!(
         DarkStore,

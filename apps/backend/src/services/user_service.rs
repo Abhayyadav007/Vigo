@@ -31,20 +31,20 @@ pub async fn change_role(
             "admins cannot change their own role".into(),
         ));
     }
-    // Store staff work at exactly one store; customers and admins have none.
-    let store_id = match role {
-        Role::Picker | Role::Rider => {
-            let id = store_id.ok_or_else(|| {
-                AppError::Validation(format!("a {} must be assigned to a store", role.as_str()))
-            })?;
-            if !stores::is_active(&state.db, id).await? {
-                return Err(AppError::Validation(
-                    "store does not exist or is inactive".into(),
-                ));
-            }
-            Some(id)
+    // Store staff and store managers work at exactly one store; everyone
+    // else has none.
+    let store_id = if role.needs_store() {
+        let id = store_id.ok_or_else(|| {
+            AppError::Validation(format!("a {} must be assigned to a store", role.as_str()))
+        })?;
+        if !stores::is_active(&state.db, id).await? {
+            return Err(AppError::Validation(
+                "store does not exist or is inactive".into(),
+            ));
         }
-        Role::Customer | Role::Admin => None,
+        Some(id)
+    } else {
+        None
     };
     let user = users::update_role(&state.db, user_id, role, store_id)
         .await?

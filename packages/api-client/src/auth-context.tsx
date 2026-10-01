@@ -34,18 +34,21 @@ export interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ROLE_LABEL: Record<Role, string> = {
+export const ROLE_LABEL: Record<Role, string> = {
   CUSTOMER: "customer",
   PICKER: "picker",
   RIDER: "rider",
-  ADMIN: "admin",
+  ADMIN: "super admin",
+  STORE_MANAGER: "store manager",
+  CATALOG_MANAGER: "catalog manager",
+  SUPPORT_AGENT: "support agent",
 };
 
 export interface AuthProviderProps {
   adapter: AuthAdapter;
   client: AxiosInstance;
-  /** The only role allowed to use this app; other roles are signed out. */
-  requiredRole: Role;
+  /** The role (or roles) allowed to use this app; other roles are signed out. */
+  requiredRole: Role | readonly Role[];
   children: ReactNode;
 }
 
@@ -60,6 +63,8 @@ export function AuthProvider({ adapter, client, requiredRole, children }: AuthPr
   const pendingError = useRef<string | undefined>(undefined);
   // Ignores results from a sync that was overtaken by a newer auth event.
   const generation = useRef(0);
+  // A string key, so an inline array prop doesn't re-run sync on every render.
+  const allowedKey = (typeof requiredRole === "string" ? [requiredRole] : requiredRole).join(",");
 
   const sync = useCallback(async () => {
     const gen = ++generation.current;
@@ -67,8 +72,10 @@ export function AuthProvider({ adapter, client, requiredRole, children }: AuthPr
     try {
       const { data } = await client.post<MeResponse>("/v1/auth/sync");
       if (gen !== generation.current) return;
-      if (data.role !== requiredRole) {
-        pendingError.current = `This app is for ${ROLE_LABEL[requiredRole]} accounts. Your account is a ${ROLE_LABEL[data.role]} account.`;
+      const allowed = allowedKey.split(",") as Role[];
+      if (!allowed.includes(data.role)) {
+        const wanted = allowed.map((r) => ROLE_LABEL[r]).join(" or ");
+        pendingError.current = `This app is for ${wanted} accounts. Your account is a ${ROLE_LABEL[data.role]} account.`;
         await adapter.signOut();
         return;
       }
@@ -79,7 +86,7 @@ export function AuthProvider({ adapter, client, requiredRole, children }: AuthPr
         err instanceof ApiError ? err.message : "Couldn't reach Vigo. Check your connection and try again.";
       await adapter.signOut();
     }
-  }, [adapter, client, requiredRole]);
+  }, [adapter, client, allowedKey]);
 
   useEffect(
     () =>

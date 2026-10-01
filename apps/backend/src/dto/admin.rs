@@ -67,6 +67,15 @@ pub struct UpdateRoleRequest {
     pub store_id: Option<Uuid>,
 }
 
+/// `POST /v1/admin/orders/{id}/cancel` (support, store managers, admins).
+#[derive(Debug, Deserialize, Validate, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export)]
+pub struct AdminCancelRequest {
+    #[validate(length(min = 1, max = 200))]
+    pub reason: String,
+}
+
 #[derive(Debug, Deserialize, Validate, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

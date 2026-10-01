@@ -34,7 +34,14 @@ pub enum Role {
     Customer,
     Picker,
     Rider,
+    /// Super Admin: everything, including cities/stores and staff roles.
     Admin,
+    /// One store: its inventory, orders and open/closed switch.
+    StoreManager,
+    /// Global: categories, products and base pricing.
+    CatalogManager,
+    /// Global: views orders, cancels them (refunding prepaid ones).
+    SupportAgent,
 }
 
 impl Role {
@@ -44,6 +51,14 @@ impl Role {
             Self::Picker => "PICKER",
             Self::Rider => "RIDER",
             Self::Admin => "ADMIN",
+            Self::StoreManager => "STORE_MANAGER",
+            Self::CatalogManager => "CATALOG_MANAGER",
+            Self::SupportAgent => "SUPPORT_AGENT",
         }
+    }
+
+    /// Roles tied to exactly one dark store (`users.store_id`).
+    pub fn needs_store(self) -> bool {
+        matches!(self, Self::Picker | Self::Rider | Self::StoreManager)
     }
 }
