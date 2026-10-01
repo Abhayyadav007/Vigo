@@ -1,9 +1,10 @@
 import { formatPaise, isOrderActive, useCancelOrder, useOrder } from "@vigo/api-client";
-import { Button, colors, EmptyState } from "@vigo/ui";
+import { Button, EmptyState } from "@vigo/ui";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Alert, Linking, ScrollView, Text, View } from "react-native";
 import { STATUS_LABEL, StatusChip } from "../../components/OrderStatus";
 import { TrackingMap } from "../../components/TrackingMap";
+import { colors } from "../../lib/theme";
 
 export default function OrderScreen() {
   const { id, placed } = useLocalSearchParams<{ id: string; placed?: string }>();
@@ -42,7 +43,7 @@ export default function OrderScreen() {
           </View>
         ) : null}
 
-        <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center justify-between rounded-lg bg-surface p-4">
           <Text className="text-lg font-bold text-ink">Status</Text>
           <StatusChip status={o.status} />
         </View>
@@ -59,7 +60,7 @@ export default function OrderScreen() {
 
         {o.rider ? <TrackingMap drop={{ lat: o.address.lat, lng: o.address.lng }} rider={o.rider.location} /> : null}
         {o.rider ? (
-          <View className="flex-row items-center justify-between rounded-lg border border-line p-4">
+          <View className="flex-row items-center justify-between rounded-lg bg-surface p-4">
             <View className="flex-1">
               <Text className="text-sm text-muted">Your delivery partner</Text>
               <Text className="text-base font-semibold text-ink">{o.rider.name ?? "Vigo rider"}</Text>
@@ -69,7 +70,7 @@ export default function OrderScreen() {
           </View>
         ) : null}
 
-        <View className="gap-2 rounded-lg border border-line p-4">
+        <View className="gap-2 rounded-lg bg-surface p-4">
           {o.events.map((e, i) => (
             <View key={`${e.status}-${i}`} className="flex-row items-center gap-3">
               <View className={`h-2.5 w-2.5 rounded-pill ${e.status === "CANCELLED" ? "bg-danger" : "bg-brand"}`} />
@@ -82,7 +83,7 @@ export default function OrderScreen() {
 
         </View>
 
-        <View className="gap-2 rounded-lg border border-line p-4">
+        <View className="gap-2 rounded-lg bg-surface p-4">
           <Text className="text-base font-bold text-ink">
             {o.itemCount} {o.itemCount === 1 ? "item" : "items"}
           </Text>
@@ -112,7 +113,7 @@ export default function OrderScreen() {
           {savings > 0 ? <Text className="text-sm text-success">You saved {formatPaise(savings)}</Text> : null}
         </View>
 
-        <View className="gap-1 rounded-lg border border-line p-4">
+        <View className="gap-1 rounded-lg bg-surface p-4">
           <Text className="text-base font-bold text-ink">Delivering to {o.address.label}</Text>
           <Text className="text-sm text-muted">
             {[o.address.line1, o.address.line2, o.address.landmark, o.address.city, o.address.pincode]
