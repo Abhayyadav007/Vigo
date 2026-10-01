@@ -7,7 +7,7 @@ use crate::{
         page::Page,
     },
     error::{AppError, AppResult},
-    extractors::{Admin, Pagination, PathParam, ValidJson, ValidQuery},
+    extractors::{Pagination, PathParam, StoreStaff, ValidJson, ValidQuery},
     repositories::{inventory, stores},
     services::catalog_service,
     state::AppState,
@@ -16,11 +16,12 @@ use crate::{
 /// `GET /v1/admin/stores/{storeId}/inventory?q=&stocked=`
 pub async fn list(
     State(state): State<AppState>,
-    _admin: Admin,
+    user: StoreStaff,
     PathParam(store_id): PathParam<Uuid>,
     page: Pagination,
     ValidQuery(query): ValidQuery<InventoryListQuery>,
 ) -> AppResult<Json<Page<InventoryItem>>> {
+    user.ensure_store(store_id)?;
     if stores::find(&state.db, store_id).await?.is_none() {
         return Err(AppError::NotFound("store"));
     }
@@ -42,10 +43,11 @@ pub async fn list(
 /// `PUT /v1/admin/stores/{storeId}/inventory/{productId}`
 pub async fn upsert(
     State(state): State<AppState>,
-    _admin: Admin,
+    user: StoreStaff,
     PathParam((store_id, product_id)): PathParam<(Uuid, Uuid)>,
     ValidJson(body): ValidJson<InventoryRequest>,
 ) -> AppResult<Json<InventoryItem>> {
+    user.ensure_store(store_id)?;
     let row = catalog_service::set_inventory(&state, store_id, product_id, &body).await?;
     Ok(Json(row.into()))
 }

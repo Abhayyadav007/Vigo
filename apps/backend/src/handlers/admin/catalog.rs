@@ -7,16 +7,16 @@ use crate::{
         page::Page,
     },
     error::{AppError, AppResult},
-    extractors::{Admin, Pagination, PathParam, ValidJson, ValidQuery},
+    extractors::{BackOffice, CatalogStaff, Pagination, PathParam, ValidJson, ValidQuery},
     repositories::{categories, products},
     services::catalog_service,
     state::AppState,
 };
 
-/// `GET /v1/admin/categories` (all; the tree is small)
+/// `GET /v1/admin/categories` (all; the tree is small). Readable by all back-office roles.
 pub async fn list_categories(
     State(state): State<AppState>,
-    _admin: Admin,
+    _user: BackOffice,
 ) -> AppResult<Json<Vec<AdminCategory>>> {
     let all = categories::list_all(&state.db).await?;
     Ok(Json(all.into_iter().map(AdminCategory::from).collect()))
@@ -25,7 +25,7 @@ pub async fn list_categories(
 /// `POST /v1/admin/categories`
 pub async fn create_category(
     State(state): State<AppState>,
-    _admin: Admin,
+    _staff: CatalogStaff,
     ValidJson(body): ValidJson<CategoryRequest>,
 ) -> AppResult<(StatusCode, Json<AdminCategory>)> {
     let c = catalog_service::create_category(&state, &body).await?;
@@ -35,7 +35,7 @@ pub async fn create_category(
 /// `PUT /v1/admin/categories/{id}`
 pub async fn update_category(
     State(state): State<AppState>,
-    _admin: Admin,
+    _staff: CatalogStaff,
     PathParam(id): PathParam<Uuid>,
     ValidJson(body): ValidJson<CategoryRequest>,
 ) -> AppResult<Json<AdminCategory>> {
@@ -49,7 +49,7 @@ pub async fn update_category(
 /// `GET /v1/admin/products?q=&categoryId=&isActive=`
 pub async fn list_products(
     State(state): State<AppState>,
-    _admin: Admin,
+    _user: BackOffice,
     page: Pagination,
     ValidQuery(query): ValidQuery<ProductListQuery>,
 ) -> AppResult<Json<Page<AdminProduct>>> {
@@ -72,7 +72,7 @@ pub async fn list_products(
 /// `GET /v1/admin/products/{id}`
 pub async fn get_product(
     State(state): State<AppState>,
-    _admin: Admin,
+    _user: BackOffice,
     PathParam(id): PathParam<Uuid>,
 ) -> AppResult<Json<AdminProduct>> {
     let p = products::find(&state.db, id)
@@ -84,7 +84,7 @@ pub async fn get_product(
 /// `POST /v1/admin/products`
 pub async fn create_product(
     State(state): State<AppState>,
-    _admin: Admin,
+    _staff: CatalogStaff,
     ValidJson(body): ValidJson<ProductRequest>,
 ) -> AppResult<(StatusCode, Json<AdminProduct>)> {
     let p = catalog_service::create_product(&state, &body).await?;
@@ -94,7 +94,7 @@ pub async fn create_product(
 /// `PUT /v1/admin/products/{id}`
 pub async fn update_product(
     State(state): State<AppState>,
-    _admin: Admin,
+    _staff: CatalogStaff,
     PathParam(id): PathParam<Uuid>,
     ValidJson(body): ValidJson<ProductRequest>,
 ) -> AppResult<Json<AdminProduct>> {

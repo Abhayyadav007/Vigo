@@ -2,6 +2,7 @@ export { ApiError, createApiClient, type ApiClientOptions } from "./client";
 export { ApiClientProvider, useApiBaseUrl, useApiClient } from "./context";
 export {
   AuthProvider,
+  ROLE_LABEL,
   useAuth,
   useCurrentUser,
   type AuthAdapter,
@@ -20,6 +21,8 @@ export {
   useInventory,
   useLiveBoard,
   useProduct,
+  useSetStoreActive,
+  useStaffCancelOrder,
   useProducts,
   useSaveCategory,
   useSaveProduct,

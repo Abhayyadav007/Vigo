@@ -1,23 +1,27 @@
-use axum::{Json, extract::State};
+use axum::{Json, extract::State, http::StatusCode};
+use uuid::Uuid;
 
 use crate::{
     dto::{
-        admin::{BoardOrder, Metrics, StoreFilter},
+        admin::{AdminCancelRequest, BoardOrder, Metrics, StoreFilter},
         order::display_number,
     },
-    error::AppResult,
-    extractors::{Admin, ValidQuery},
+    error::{AppError, AppResult},
+    extractors::{OrderStaff, PathParam, ValidJson, ValidQuery},
+    models::order::OrderStatus,
     repositories::orders,
+    services::order_service,
     state::AppState,
 };
 
 /// `GET /v1/admin/orders?storeId=`: orders in flight (live board; updates on `/v1/ws/admin`).
 pub async fn board(
     State(state): State<AppState>,
-    _admin: Admin,
+    user: OrderStaff,
     ValidQuery(q): ValidQuery<StoreFilter>,
 ) -> AppResult<Json<Vec<BoardOrder>>> {
-    let rows = orders::board(&state.db, q.store_id).await?;
+    let store_id = user.scoped_store_filter(q.store_id)?;
+    let rows = orders::board(&state.db, store_id).await?;
     Ok(Json(
         rows.into_iter()
             .map(|r| BoardOrder {
@@ -39,10 +43,11 @@ pub async fn board(
 /// `GET /v1/admin/metrics?storeId=`: today's numbers (IST).
 pub async fn metrics(
     State(state): State<AppState>,
-    _admin: Admin,
+    user: OrderStaff,
     ValidQuery(q): ValidQuery<StoreFilter>,
 ) -> AppResult<Json<Metrics>> {
-    let m = orders::metrics_today(&state.db, q.store_id).await?;
+    let store_id = user.scoped_store_filter(q.store_id)?;
+    let m = orders::metrics_today(&state.db, store_id).await?;
     Ok(Json(Metrics {
         orders_today: m.orders,
         delivered_today: m.delivered,
@@ -51,4 +56,25 @@ pub async fn metrics(
         avg_delivery_minutes: m.avg_delivery_minutes.map(|v| (v * 10.0).round() / 10.0),
         riders_online: m.riders_online,
     }))
+}
+
+/// `POST /v1/admin/orders/{id}/cancel`: support or the store cancels an order
+/// that hasn't been picked up yet. Prepaid orders are marked refunded.
+pub async fn cancel(
+    State(state): State<AppState>,
+    user: OrderStaff,
+    PathParam(id): PathParam<Uuid>,
+    ValidJson(body): ValidJson<AdminCancelRequest>,
+) -> AppResult<StatusCode> {
+    let order = orders::find(&state.db, id)
+        .await?
+        .ok_or(AppError::NotFound("order"))?;
+    if user.store_scope().is_some_and(|own| own != order.store_id) {
+        return Err(AppError::NotFound("order"));
+    }
+    let reason = body.reason.trim();
+    let from = OrderStatus::predecessors(OrderStatus::Cancelled);
+    order_service::cancel(&state, id, Some(user.user_id), reason, &from).await?;
+    tracing::info!(actor = %user.user_id, role = user.role.as_str(), order_id = %id, "order cancelled by staff");
+    Ok(StatusCode::NO_CONTENT)
 }

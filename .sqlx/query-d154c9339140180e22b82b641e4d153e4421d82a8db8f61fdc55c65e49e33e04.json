@@ -34,7 +34,10 @@
                 "CUSTOMER",
                 "PICKER",
                 "RIDER",
-                "ADMIN"
+                "ADMIN",
+                "STORE_MANAGER",
+                "CATALOG_MANAGER",
+                "SUPPORT_AGENT"
               ]
             }
           }
@@ -77,7 +80,10 @@
                 "CUSTOMER",
                 "PICKER",
                 "RIDER",
-                "ADMIN"
+                "ADMIN",
+                "STORE_MANAGER",
+                "CATALOG_MANAGER",
+                "SUPPORT_AGENT"
               ]
             }
           }

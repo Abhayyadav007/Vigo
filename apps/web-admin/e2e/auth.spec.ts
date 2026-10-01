@@ -8,7 +8,7 @@ test("non-admins are turned away; admins can sign in and assign roles", async ({
 
   // 1. A brand-new account is a CUSTOMER, so the admin app signs it out.
   await signInViaUi(page, adminDigits);
-  await expect(page.getByRole("alert")).toContainText("This app is for admin accounts");
+  await expect(page.getByRole("alert")).toContainText("This app is for super admin");
   await expect(page.getByLabel("Mobile number")).toBeVisible();
 
   // 2. Bootstrap them to ADMIN, then sign in again.

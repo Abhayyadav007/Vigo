@@ -1,6 +1,7 @@
 import {
   ApiError,
   formatIndianPhone,
+  ROLE_LABEL,
   useAdminUsers,
   useCurrentUser,
   useStores,
@@ -8,8 +9,9 @@ import {
 } from "@vigo/api-client";
 import type { AdminUser, Role } from "@vigo/types";
 import { useDeferredValue, useState } from "react";
+import { needsStore } from "../lib/roles";
 
-const ROLES: Role[] = ["CUSTOMER", "PICKER", "RIDER", "ADMIN"];
+const ROLES: Role[] = ["CUSTOMER", "PICKER", "RIDER", "STORE_MANAGER", "CATALOG_MANAGER", "SUPPORT_AGENT", "ADMIN"];
 const PAGE_SIZE = 20;
 
 export function Staff() {
@@ -46,7 +48,9 @@ export function Staff() {
         >
           <option value="">All roles</option>
           {ROLES.map((r) => (
-            <option key={r}>{r}</option>
+            <option key={r} value={r}>
+              {ROLE_LABEL[r]}
+            </option>
           ))}
         </select>
       </div>
@@ -94,8 +98,6 @@ export function Staff() {
   );
 }
 
-const needsStore = (role: Role) => role === "PICKER" || role === "RIDER";
-
 function UserRow({ user, isSelf }: { user: AdminUser; isSelf: boolean }) {
   const update = useUpdateUserRole();
   const stores = useStores();
@@ -117,7 +119,9 @@ function UserRow({ user, isSelf }: { user: AdminUser; isSelf: boolean }) {
           onChange={(e) => setRole(e.target.value as Role)}
         >
           {ROLES.map((r) => (
-            <option key={r}>{r}</option>
+            <option key={r} value={r}>
+              {ROLE_LABEL[r]}
+            </option>
           ))}
         </select>
         {error ? <div className="error small">{error}</div> : null}

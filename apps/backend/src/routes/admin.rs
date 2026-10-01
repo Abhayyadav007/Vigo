@@ -14,10 +14,12 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/users", get(staff::list_users))
         .route("/orders", get(orders::board))
+        .route("/orders/{id}/cancel", post(orders::cancel))
         .route("/metrics", get(orders::metrics))
         .route("/users/{id}/role", patch(staff::update_role))
         .route("/stores", get(stores::list).post(stores::create))
         .route("/stores/{id}", get(stores::get).put(stores::update))
+        .route("/stores/{id}/active", patch(stores::set_active))
         .route("/stores/{id}/inventory", get(inventory::list))
         .route(
             "/stores/{id}/inventory/{product_id}",

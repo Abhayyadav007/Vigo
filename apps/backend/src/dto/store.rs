@@ -7,6 +7,14 @@ use validator::Validate;
 use super::geo::{GeoJsonPolygon, LatLng};
 use crate::models::store::DarkStore;
 
+/// `PATCH /v1/admin/stores/{id}/active`: switch a store on or off (store managers' own store).
+#[derive(Debug, Deserialize, Validate, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export)]
+pub struct StoreActiveRequest {
+    pub is_active: bool,
+}
+
 /// `POST /v1/admin/stores`, `PUT /v1/admin/stores/{id}` (full replace).
 #[derive(Debug, Deserialize, Validate, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
