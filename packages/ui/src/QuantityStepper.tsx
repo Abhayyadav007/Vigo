@@ -20,7 +20,7 @@ export function QuantityStepper({ quantity, max, onChange, disabled, size = "sm"
         accessibilityLabel="Add to cart"
         disabled={disabled || max === 0}
         onPress={() => onChange(1)}
-        className={`${h} min-w-16 items-center justify-center rounded-md border border-brand bg-brand-light px-4 active:opacity-70 ${disabled || max === 0 ? "opacity-40" : ""}`}
+        className={`${h} min-w-16 items-center justify-center rounded-md border border-brand bg-surface px-4 active:opacity-70 ${disabled || max === 0 ? "opacity-40" : ""}`}
       >
         <Text className="font-bold text-brand">ADD</Text>
       </Pressable>

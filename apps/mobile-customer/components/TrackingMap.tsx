@@ -1,6 +1,6 @@
 import type { LatLng } from "@vigo/types";
-import { colors } from "@vigo/ui";
 import MapView, { Marker } from "react-native-maps";
+import { colors } from "../lib/theme";
 
 /** Drop point plus the rider's live position (moves as `riderLocation` events arrive). */
 export function TrackingMap({ drop, rider }: { drop: LatLng; rider: LatLng | null }) {

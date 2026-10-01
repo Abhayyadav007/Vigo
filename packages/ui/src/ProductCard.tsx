@@ -28,7 +28,7 @@ export function ProductCard(p: ProductCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`${p.name}, ${p.unitLabel}, ${p.price}${p.inStock ? "" : ", out of stock"}`}
       onPress={p.onPress}
-      className="flex-1 gap-1 rounded-lg bg-surface p-2 active:opacity-80"
+      className="flex-1 gap-1 rounded-lg border border-line bg-surface p-2 active:opacity-80"
     >
       {/* Product photos are shot on white, so they sit on a white tile. */}
       <View className="aspect-square items-center justify-center overflow-hidden rounded-md bg-photo">
@@ -49,7 +49,7 @@ export function ProductCard(p: ProductCardProps) {
         ) : null}
       </View>
       {p.eta ? (
-        <View className="mt-1 self-start rounded-sm bg-background px-1.5 py-0.5">
+        <View className="mt-1 self-start rounded-sm border border-line bg-background px-1.5 py-0.5">
           <Text className="text-[10px] font-bold text-ink">⏱ {p.eta}</Text>
         </View>
       ) : null}

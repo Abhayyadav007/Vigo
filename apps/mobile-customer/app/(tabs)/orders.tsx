@@ -1,9 +1,10 @@
 import { formatPaise, useOrders } from "@vigo/api-client";
-import { colors, EmptyState } from "@vigo/ui";
+import { EmptyState } from "@vigo/ui";
 import { router } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusChip } from "../../components/OrderStatus";
+import { colors } from "../../lib/theme";
 
 export default function Orders() {
   const insets = useSafeAreaInsets();
@@ -34,7 +35,7 @@ export default function Orders() {
       renderItem={({ item: o }) => (
         <Pressable
           onPress={() => router.push({ pathname: "/order/[id]", params: { id: o.id } })}
-          className="gap-2 rounded-lg border border-line p-4 active:bg-surface"
+          className="gap-2 rounded-lg border border-line bg-surface p-4 active:opacity-80"
         >
           <View className="flex-row items-center justify-between">
             <Text className="font-semibold text-ink">{o.number}</Text>

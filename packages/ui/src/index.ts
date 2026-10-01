@@ -1,4 +1,5 @@
 export * from "./theme";
+export { ColorsProvider, useColors } from "./ColorsContext";
 export { Button, type ButtonProps, type ButtonVariant } from "./Button";
 export { PhoneLoginForm, type PhoneLoginFormProps } from "./PhoneLoginForm";
 export { Screen, type ScreenProps } from "./Screen";

@@ -1,7 +1,8 @@
-import { Button, colors, EmptyState } from "@vigo/ui";
+import { Button, EmptyState } from "@vigo/ui";
 import type { ReactNode } from "react";
 import { ActivityIndicator, Linking, View } from "react-native";
 import { useDelivery } from "../lib/location";
+import { colors } from "../lib/theme";
 
 /** Renders children only once we know which store delivers to the customer. */
 export function DeliveryGate({ children }: { children: ReactNode }) {

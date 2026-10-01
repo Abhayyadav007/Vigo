@@ -1,43 +1,37 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { resolveMediaUrl, useApiBaseUrl, useCatalogCategories, useCatalogProducts } from "@vigo/api-client";
-import { CategoryTile, colors, EmptyState } from "@vigo/ui";
+import { resolveMediaUrl, useApiBaseUrl, useCatalogCategories } from "@vigo/api-client";
+import { CategoryTile, EmptyState } from "@vigo/ui";
 import { router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
 import { CartBar } from "../../components/CartControls";
-import { ProductGrid } from "../../components/ProductGrid";
+import { CategoryRail } from "../../components/CategoryRail";
+import { HomeHeader } from "../../components/HomeHeader";
+import { PromoBanners } from "../../components/PromoBanners";
 import { useStore } from "../../lib/location";
+import { colors } from "../../lib/theme";
+
+const GRID_SIZE = 8;
 
 export default function Home() {
   const store = useStore();
-  const insets = useSafeAreaInsets();
   const base = useApiBaseUrl();
   const categories = useCatalogCategories(store.id);
-  const products = useCatalogProducts(store.id);
-  const items = products.data?.pages.flatMap((p) => p.items) ?? [];
+  const stocked = (categories.data ?? []).filter((c) => c.productCount > 0);
 
-  const header = (
-    <View className="gap-5 pb-2" style={{ paddingTop: insets.top + 12 }}>
-      <View>
-        <Text className="text-xs font-bold uppercase tracking-widest text-ink">Vigo in</Text>
-        <Text className="text-4xl font-extrabold text-accent" testID="eta">
-          {store.etaMinutes} minutes
-        </Text>
-        <Text className="text-sm text-muted">Delivering from {store.name}</Text>
-      </View>
-      <Pressable
-        accessibilityRole="search"
-        onPress={() => router.push("/search")}
-        className="h-12 flex-row items-center gap-3 rounded-lg border border-line bg-surface px-4"
-      >
-        <Ionicons name="search" size={20} color={colors.ink} />
-        <Text className="text-base text-muted">Search for atta, dal, milk…</Text>
-      </Pressable>
-      {categories.data && categories.data.length > 0 ? (
-        <View className="gap-3">
-          <Text className="text-lg font-bold text-ink">Shop by category</Text>
+  const feedHeader = (
+    <View className="gap-4 pt-4">
+      <PromoBanners categories={stocked} />
+      {stocked.length > 0 ? (
+        <View className="gap-3 px-4">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold text-ink">Shop by category</Text>
+            {stocked.length > GRID_SIZE ? (
+              <Pressable accessibilityRole="link" onPress={() => router.navigate("/categories")} hitSlop={8}>
+                <Text className="font-semibold text-brand">See all</Text>
+              </Pressable>
+            ) : null}
+          </View>
           <View className="flex-row flex-wrap gap-y-4">
-            {categories.data.map((c) => (
+            {stocked.slice(0, GRID_SIZE).map((c) => (
               <View key={c.id} className="w-1/4 px-1">
                 <CategoryTile
                   name={c.name}
@@ -49,26 +43,29 @@ export default function Home() {
           </View>
         </View>
       ) : null}
-      <Text className="text-lg font-bold text-ink">All products</Text>
     </View>
   );
 
   return (
     <View className="flex-1 bg-background">
-      <ProductGrid
-        products={items}
-        header={header}
-        loadingMore={products.isFetchingNextPage}
-        onEndReached={() => {
-          if (products.hasNextPage && !products.isFetchingNextPage) void products.fetchNextPage();
-        }}
-        empty={
-          products.isPending ? undefined : (
+      <HomeHeader />
+      <FlatList
+        data={stocked}
+        keyExtractor={(c) => c.id}
+        ListHeaderComponent={feedHeader}
+        contentContainerClassName="pb-24"
+        renderItem={({ item }) => <CategoryRail category={item} />}
+        onRefresh={() => void categories.refetch()}
+        refreshing={categories.isRefetching}
+        ListEmptyComponent={
+          categories.isPending ? (
+            <ActivityIndicator className="mt-10" color={colors.brand} />
+          ) : (
             <EmptyState title="Nothing here yet" message="This store hasn't stocked any products yet." />
           )
         }
       />
-      <CartBar />
+      <CartBar overTabs />
     </View>
   );
 }
