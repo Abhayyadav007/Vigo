@@ -72,10 +72,7 @@ impl AppState {
 
         let payments = Payments {
             cod: CashOnDelivery,
-            razorpay: config
-                .razorpay
-                .clone()
-                .map(|(key, secret)| Razorpay::new(key, secret)),
+            razorpay: config.razorpay.as_ref().map(Razorpay::new).transpose()?,
         };
         if payments.razorpay.is_none() {
             tracing::info!("Razorpay not configured: online payments disabled (COD only)");

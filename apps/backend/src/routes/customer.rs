@@ -27,4 +27,5 @@ pub fn router() -> Router<AppState> {
         .route("/orders", get(orders::list))
         .route("/orders/{id}", get(orders::get))
         .route("/orders/{id}/cancel", post(orders::cancel))
+        .route("/orders/{id}/payment", post(orders::verify_payment))
 }

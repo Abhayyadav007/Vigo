@@ -10,7 +10,10 @@ use uuid::Uuid;
 use crate::{
     cache::rate_limit,
     dto::{
-        order::{CancelOrderRequest, CheckoutRequest, CheckoutResponse, OrderDetail, OrderSummary},
+        order::{
+            CancelOrderRequest, CheckoutRequest, CheckoutResponse, OrderDetail, OrderSummary,
+            PaymentVerifyRequest,
+        },
         page::Page,
     },
     error::{AppError, AppResult},
@@ -96,5 +99,18 @@ pub async fn cancel(
 ) -> AppResult<Json<OrderDetail>> {
     Ok(Json(
         order_service::cancel_by_customer(&state, &user, id, body.reason.as_deref()).await?,
+    ))
+}
+
+/// `POST /v1/customer/orders/{id}/payment`: verify Razorpay checkout's success
+/// callback and confirm the order (the webhook does the same, idempotently).
+pub async fn verify_payment(
+    State(state): State<AppState>,
+    user: Customer,
+    PathParam(id): PathParam<Uuid>,
+    ValidJson(body): ValidJson<PaymentVerifyRequest>,
+) -> AppResult<Json<OrderDetail>> {
+    Ok(Json(
+        order_service::verify_checkout_payment(&state, &user, id, &body).await?,
     ))
 }

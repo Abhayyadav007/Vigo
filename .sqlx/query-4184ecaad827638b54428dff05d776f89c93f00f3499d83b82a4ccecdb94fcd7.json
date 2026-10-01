@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO order_payments (order_id, provider, payment_id, amount_paise)\n        VALUES ($1, $2, $3, $4)\n        ON CONFLICT DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4184ecaad827638b54428dff05d776f89c93f00f3499d83b82a4ccecdb94fcd7"
+}

@@ -34,7 +34,8 @@
     "react-native-worklets": "catalog:",
     "expo-location": "catalog:",
     "@expo/vector-icons": "catalog:",
-    "react-native-maps": "catalog:"
+    "react-native-maps": "catalog:",
+    "react-native-razorpay": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

@@ -74,13 +74,22 @@ impl TestApp {
             media_dir: std::env::temp_dir()
                 .join(format!("vigo-test-media-{}", uuid::Uuid::new_v4())),
             reservation_ttl: Duration::from_secs(600),
-            razorpay: Some((RAZORPAY_KEY.into(), RAZORPAY_WEBHOOK_SECRET.into())),
+            razorpay: Some(backend::config::RazorpayConfig {
+                key_id: RAZORPAY_KEY.into(),
+                key_secret: None,
+                webhook_secret: RAZORPAY_WEBHOOK_SECRET.into(),
+                api_base: String::new(),
+            }),
+            cod_enabled: true,
             dispatch: backend::config::DispatchConfig::default(),
         };
         tweak(&mut config);
         let payments = Payments {
             cod: CashOnDelivery,
-            razorpay: config.razorpay.clone().map(|(k, s)| Razorpay::new(k, s)),
+            razorpay: config
+                .razorpay
+                .as_ref()
+                .map(|c| Razorpay::new(c).expect("razorpay")),
         };
         let media_dir = config.media_dir.clone();
         let redis_url_for_hub = config.redis_url.clone();

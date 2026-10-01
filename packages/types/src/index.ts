@@ -47,6 +47,7 @@ export type { PackRequest } from "./bindings/PackRequest";
 export type { Page } from "./bindings/Page";
 export type { PaymentMethod } from "./bindings/PaymentMethod";
 export type { PaymentStatus } from "./bindings/PaymentStatus";
+export type { PaymentVerifyRequest } from "./bindings/PaymentVerifyRequest";
 export type { PickLine } from "./bindings/PickLine";
 export type { PickList } from "./bindings/PickList";
 export type { PickerCancelRequest } from "./bindings/PickerCancelRequest";
