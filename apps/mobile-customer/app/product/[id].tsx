@@ -1,10 +1,12 @@
 import { discountPercent, formatPaise, resolveMediaUrl, useApiBaseUrl, useCatalogProduct } from "@vigo/api-client";
-import { colors, EmptyState } from "@vigo/ui";
+import { EmptyState } from "@vigo/ui";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, Image, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AddToCart } from "../../components/CartControls";
 import { DeliveryGate } from "../../components/DeliveryGate";
 import { useStore } from "../../lib/location";
+import { colors } from "../../lib/theme";
 
 export default function ProductScreen() {
   return (
@@ -19,6 +21,7 @@ function ProductDetail() {
   const store = useStore();
   const base = useApiBaseUrl();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const product = useCatalogProduct(store.id, id);
 
   if (product.isPending) {
@@ -37,7 +40,7 @@ function ProductDetail() {
   return (
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ headerShown: true, title: "" }} />
-      <ScrollView contentContainerClassName="gap-4 pb-8">
+      <ScrollView contentContainerClassName="gap-3 pb-6">
         {images.length > 0 ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} className="bg-photo">
             {images.map((uri) => (
@@ -49,30 +52,49 @@ function ProductDetail() {
             <Text className="text-6xl">🛒</Text>
           </View>
         )}
-        <View className="gap-2 px-5">
-          {p.brand ? <Text className="text-sm text-muted">{p.brand}</Text> : null}
+        <View className="mx-4 gap-2 rounded-lg bg-surface p-4">
+          <View className="self-start rounded-sm border border-line bg-background px-2 py-0.5">
+            <Text className="text-xs font-bold text-ink">⏱ {store.etaMinutes} MINS</Text>
+          </View>
           <Text className="text-2xl font-bold text-ink">{p.name}</Text>
           <Text className="text-base text-muted">{p.unitLabel}</Text>
-          <View className="flex-row items-baseline gap-3">
-            <Text className="text-2xl font-bold text-ink">{formatPaise(p.pricePaise)}</Text>
+          {p.brand ? (
+            <Text className="text-sm text-muted">
+              Brand: <Text className="font-semibold text-ink">{p.brand}</Text>
+            </Text>
+          ) : null}
+        </View>
+        {p.description ? (
+          <View className="mx-4 gap-2 rounded-lg bg-surface p-4">
+            <Text className="text-base font-bold text-ink">Product details</Text>
+            <Text className="text-sm leading-6 text-ink">{p.description}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+      <View
+        className="flex-row items-center gap-3 border-t border-line bg-surface px-4 pt-3"
+        style={{ paddingBottom: insets.bottom + 12 }}
+      >
+        <View className="flex-1">
+          <Text className="text-xs text-muted">{p.unitLabel}</Text>
+          <View className="flex-row flex-wrap items-baseline gap-x-2">
+            <Text className="text-xl font-bold text-ink">{formatPaise(p.pricePaise)}</Text>
             {off > 0 ? (
               <>
-                <Text className="text-base text-muted line-through">MRP {formatPaise(p.mrpPaise)}</Text>
-                <Text className="text-base font-bold text-brand">{off}% OFF</Text>
+                <Text className="text-sm text-muted line-through">MRP {formatPaise(p.mrpPaise)}</Text>
+                <Text className="text-sm font-bold text-offer">{off}% OFF</Text>
               </>
-            ) : (
-              <Text className="text-sm text-muted">MRP (incl. of all taxes)</Text>
-            )}
+            ) : null}
           </View>
-          {p.description ? <Text className="mt-2 text-base leading-6 text-ink">{p.description}</Text> : null}
+          <Text className="text-xs text-muted">Inclusive of all taxes</Text>
         </View>
-      </ScrollView>
-      <View className="gap-3 border-t border-line bg-background p-4 pb-8">
-        {p.inStock ? (
-          <AddToCart product={p} size="md" />
-        ) : (
-          <Text className="text-center text-base font-semibold text-muted">Out of stock</Text>
-        )}
+        <View className="w-32">
+          {p.inStock ? (
+            <AddToCart product={p} size="md" />
+          ) : (
+            <Text className="text-center text-base font-semibold text-muted">Out of stock</Text>
+          )}
+        </View>
       </View>
     </View>
   );

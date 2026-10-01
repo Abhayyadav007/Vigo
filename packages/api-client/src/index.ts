@@ -45,6 +45,7 @@ export {
   orderKeys,
   useAddresses,
   useCancelOrder,
+  useVerifyPayment,
   useCart,
   useCheckout,
   useDeleteAddress,

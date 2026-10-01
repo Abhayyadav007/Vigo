@@ -6,6 +6,7 @@ pub mod catalog;
 pub mod categories;
 pub mod health;
 pub mod inventory;
+pub mod order_payments;
 pub mod orders;
 pub mod picking;
 pub mod products;

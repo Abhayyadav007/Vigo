@@ -125,6 +125,8 @@ pub struct CartResponse {
     pub bill: BillSummary,
     /// True when every line can be ordered as is.
     pub can_checkout: bool,
+    /// Payment methods checkout accepts right now, preferred first.
+    pub payment_methods: Vec<PaymentMethod>,
 }
 
 // ---------- checkout & orders ----------
@@ -136,6 +138,19 @@ pub struct CheckoutRequest {
     pub store_id: Uuid,
     pub address_id: Uuid,
     pub payment_method: PaymentMethod,
+}
+
+/// `POST /v1/customer/orders/{id}/payment`: Razorpay checkout's success payload.
+#[derive(Debug, Deserialize, Validate, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[ts(export)]
+pub struct PaymentVerifyRequest {
+    #[validate(length(min = 1, max = 64))]
+    pub razorpay_order_id: String,
+    #[validate(length(min = 1, max = 64))]
+    pub razorpay_payment_id: String,
+    #[validate(length(min = 1, max = 128))]
+    pub razorpay_signature: String,
 }
 
 #[derive(Debug, Serialize, TS)]

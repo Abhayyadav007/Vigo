@@ -10,6 +10,7 @@ import type {
   OrderDetail,
   OrderStatus,
   OrderSummary,
+  PaymentVerifyRequest,
   Page,
   WsServerMessage,
 } from "@vigo/types";
@@ -200,6 +201,20 @@ export function useOrder(id: string | undefined) {
   );
   useLiveEvents(active ? `/v1/ws/orders/${id}` : null, onMessage);
   return query;
+}
+
+/** `POST /v1/customer/orders/{id}/payment`: hands Razorpay's success callback to the backend. */
+export function useVerifyPayment() {
+  const client = useApiClient();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: PaymentVerifyRequest }) =>
+      (await client.post<OrderDetail>(`/v1/customer/orders/${id}/payment`, body)).data,
+    onSuccess: (order) => {
+      qc.setQueryData(orderKeys.order(order.id), order);
+      return qc.invalidateQueries({ queryKey: orderKeys.orders, exact: true });
+    },
+  });
 }
 
 export function useCancelOrder() {

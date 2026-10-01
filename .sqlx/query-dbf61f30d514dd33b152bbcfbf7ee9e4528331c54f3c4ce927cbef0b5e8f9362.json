@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT payment_id, amount_paise, refund_id FROM order_payments WHERE order_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "payment_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "amount_paise",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "refund_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "dbf61f30d514dd33b152bbcfbf7ee9e4528331c54f3c4ce927cbef0b5e8f9362"
+}

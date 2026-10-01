@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE order_payments SET refund_id = $2, refunded_at = now() WHERE order_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "74fe166c48ea32f612fba478f426d21f9cc324cb12d881bbe91ac034b7aa88d8"
+}

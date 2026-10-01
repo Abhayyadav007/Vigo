@@ -6,6 +6,7 @@ use crate::{
         order::{CartLine, CartResponse},
     },
     error::{AppError, AppResult},
+    models::order::PaymentMethod,
     repositories::{carts, catalog},
     services::pricing,
     state::AppState,
@@ -51,6 +52,7 @@ pub async fn get(state: &AppState, user_id: Uuid, store_id: Uuid) -> AppResult<C
         item_count,
         bill: pricing::bill(item_total, mrp_total),
         can_checkout,
+        payment_methods: payment_methods(state),
     })
 }
 
@@ -85,4 +87,16 @@ pub async fn set_item(
 pub async fn clear(state: &AppState, user_id: Uuid, store_id: Uuid) -> AppResult<CartResponse> {
     carts::clear(&state.db, user_id, store_id).await?;
     get(state, user_id, store_id).await
+}
+
+/// Online first (UPI-first launch), then COD when enabled.
+fn payment_methods(state: &AppState) -> Vec<PaymentMethod> {
+    let mut methods = Vec::with_capacity(2);
+    if state.payments.razorpay.is_some() {
+        methods.push(PaymentMethod::Online);
+    }
+    if state.config.cod_enabled {
+        methods.push(PaymentMethod::Cod);
+    }
+    methods
 }

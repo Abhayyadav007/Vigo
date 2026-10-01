@@ -45,9 +45,23 @@ pub struct Config {
     pub media_dir: PathBuf,
     /// How long checkout holds stock for an unpaid order.
     pub reservation_ttl: Duration,
-    /// Razorpay key id + webhook secret. Online payments are off unless both are set.
-    pub razorpay: Option<(String, String)>,
+    /// Online payments are off unless the key id and webhook secret are set.
+    pub razorpay: Option<RazorpayConfig>,
+    /// Offer cash on delivery at checkout (`COD_ENABLED`, default on). The first
+    /// release is online-only.
+    pub cod_enabled: bool,
     pub dispatch: DispatchConfig,
+}
+
+#[derive(Debug, Clone)]
+pub struct RazorpayConfig {
+    pub key_id: String,
+    /// API secret for the Orders/Refunds APIs and checkout signatures. Without
+    /// it (development only) gateway orders are stubbed and refunds skipped.
+    pub key_secret: Option<String>,
+    pub webhook_secret: String,
+    /// `https://api.razorpay.com`; overridable for tests.
+    pub api_base: String,
 }
 
 /// Rider dispatch tuning.
@@ -93,6 +107,24 @@ impl Config {
             bail!("FIREBASE_AUTH_EMULATOR_HOST must not be set when APP_ENV=production");
         }
 
+        let razorpay = match (
+            non_empty("RAZORPAY_KEY_ID"),
+            non_empty("RAZORPAY_WEBHOOK_SECRET"),
+        ) {
+            (Some(key_id), Some(webhook_secret)) => Some(RazorpayConfig {
+                key_id,
+                key_secret: non_empty("RAZORPAY_KEY_SECRET"),
+                webhook_secret,
+                api_base: var_or("RAZORPAY_API_BASE", "https://api.razorpay.com"),
+            }),
+            _ => None,
+        };
+        if app_env == AppEnv::Production
+            && razorpay.as_ref().is_some_and(|r| r.key_secret.is_none())
+        {
+            bail!("RAZORPAY_KEY_SECRET is required when APP_ENV=production");
+        }
+
         Ok(Self {
             app_env,
             addr,
@@ -116,15 +148,8 @@ impl Config {
                 wave_size: parse_or("DISPATCH_WAVE_SIZE", 3)?,
                 stale_after: Duration::from_secs(parse_or("RIDER_STALE_SECS", 60)?),
             },
-            razorpay: match (
-                env::var("RAZORPAY_KEY_ID").ok().filter(|s| !s.is_empty()),
-                env::var("RAZORPAY_WEBHOOK_SECRET")
-                    .ok()
-                    .filter(|s| !s.is_empty()),
-            ) {
-                (Some(key), Some(secret)) => Some((key, secret)),
-                _ => None,
-            },
+            razorpay,
+            cod_enabled: parse_or("COD_ENABLED", true)?,
             media_dir: {
                 let dir = PathBuf::from(var_or("MEDIA_DIR", "media"));
                 match base_dir {
@@ -159,4 +184,8 @@ where
             .map_err(|e| anyhow::anyhow!("invalid {key} `{raw}`: {e}")),
         Err(_) => Ok(default),
     }
+}
+
+fn non_empty(key: &str) -> Option<String> {
+    env::var(key).ok().filter(|s| !s.trim().is_empty())
 }

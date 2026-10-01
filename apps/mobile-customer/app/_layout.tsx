@@ -2,15 +2,16 @@ import "../global.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider, AuthProvider, useAuth } from "@vigo/api-client";
-import { colors, navColors } from "@vigo/ui";
-import { DarkTheme, Stack, ThemeProvider } from "expo-router";
+import { ColorsProvider } from "@vigo/ui";
+import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { apiClient, firebaseAuth } from "../lib/api";
 import { DeliveryProvider } from "../lib/location";
+import { colors, navColors } from "../lib/theme";
 
-const navTheme = { ...DarkTheme, colors: { ...DarkTheme.colors, ...navColors } };
+const navTheme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, ...navColors } };
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
@@ -18,10 +19,12 @@ export default function RootLayout() {
     <ApiClientProvider client={apiClient}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider adapter={firebaseAuth.adapter} client={apiClient} requiredRole="CUSTOMER">
-          <StatusBar style="light" />
-          <ThemeProvider value={navTheme}>
-            <RootStack />
-          </ThemeProvider>
+          <ColorsProvider palette={colors}>
+            <StatusBar style="dark" />
+            <ThemeProvider value={navTheme}>
+              <RootStack />
+            </ThemeProvider>
+          </ColorsProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ApiClientProvider>
@@ -39,9 +42,19 @@ function RootStack() {
   }
   const signedIn = state.status === "signedIn";
   const stack = (
-    <Stack screenOptions={{ headerShown: false, headerTintColor: colors.brand, headerBackButtonDisplayMode: "minimal" }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        headerTintColor: colors.ink,
+        headerTitleStyle: { fontWeight: "700" },
+        headerShadowVisible: false,
+        headerBackButtonDisplayMode: "minimal",
+      }}
+    >
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="search" />
+        <Stack.Screen name="cart" />
         <Stack.Screen name="category/[id]" />
         <Stack.Screen name="product/[id]" />
         <Stack.Screen name="order/[id]" />

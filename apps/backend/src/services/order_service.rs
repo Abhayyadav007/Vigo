@@ -16,14 +16,14 @@ use crate::{
     },
     dto::order::{
         CheckoutRequest, CheckoutResponse, OrderDetail, OrderEvent, OrderItemDto,
-        OrderStatusChanged, OrderSummary, RazorpayCheckout, display_number,
+        OrderStatusChanged, OrderSummary, PaymentVerifyRequest, RazorpayCheckout, display_number,
     },
     dto::rider::AssignedRider,
     error::{AppError, AppResult},
     extractors::AuthUser,
     models::order::{AddressSnapshot, Order, OrderStatus, PaymentMethod, PaymentStatus},
     repositories::{
-        addresses, carts,
+        addresses, carts, order_payments,
         orders::{self, NewOrder, NewOrderItem},
         riders, stores,
     },
@@ -59,6 +59,11 @@ pub async fn checkout(
     if req.payment_method == PaymentMethod::Online && state.payments.razorpay.is_none() {
         return Err(AppError::Validation(
             "online payment isn't available right now; choose cash on delivery".into(),
+        ));
+    }
+    if req.payment_method == PaymentMethod::Cod && !state.config.cod_enabled {
+        return Err(AppError::Validation(
+            "cash on delivery isn't available; pay online".into(),
         ));
     }
 
@@ -179,7 +184,19 @@ pub async fn checkout(
     let init = match req.payment_method {
         PaymentMethod::Cod => state.payments.cod.initiate(&order).await?,
         PaymentMethod::Online => match &state.payments.razorpay {
-            Some(rp) => rp.initiate(&order).await?,
+            Some(rp) => match rp.initiate(&order).await {
+                Ok(init) => init,
+                Err(e) => {
+                    // No gateway order means nothing can be paid: free the stock now.
+                    let reason = "Payment couldn't be started";
+                    if let Err(error) =
+                        cancel(state, order_id, None, reason, &[OrderStatus::Placed]).await
+                    {
+                        tracing::error!(%error, %order_id, "cancelling after a gateway failure failed");
+                    }
+                    return Err(e);
+                }
+            },
             None => {
                 return Err(AppError::Internal(anyhow::anyhow!(
                     "razorpay vanished mid-checkout"
@@ -471,13 +488,16 @@ pub async fn cancel(
             orders::increment_stock(&mut tx, order.store_id, product_id, qty).await?;
         }
     }
-    if order.payment_status == PaymentStatus::Paid {
-        // TODO(prod): issue the refund through the payment provider.
+    // Money was taken if a capture is on record (even if confirmation then
+    // failed, e.g. stock ran out), so that is what gets refunded.
+    let captured = order_payments::find(&mut *tx, order_id).await?;
+    if captured.is_some() || order.payment_status == PaymentStatus::Paid {
         orders::set_payment_status(&mut *tx, order_id, PaymentStatus::Refunded).await?;
     } else if order.payment_method == PaymentMethod::Online {
         orders::set_payment_status(&mut *tx, order_id, PaymentStatus::Failed).await?;
     }
     tx.commit().await?;
+    refund_best_effort(state, &order, captured).await;
 
     if stock_was_taken {
         for &(product_id, qty) in &restock {
@@ -625,23 +645,10 @@ pub async fn handle_razorpay_webhook(
 
     match hook.event.as_str() {
         "payment.captured" | "order.paid" => {
-            if payment.amount != order.total_paise || payment.currency != "INR" {
-                tracing::error!(%order_id, amount = payment.amount, "payment amount mismatch; not confirming");
-                return Err(AppError::Validation(
-                    "payment amount doesn't match the order".into(),
-                ));
+            if payment.currency != "INR" {
+                return Err(AppError::Validation("payment currency must be INR".into()));
             }
-            match order.status {
-                OrderStatus::Placed => confirm(state, order_id, None, true).await?,
-                OrderStatus::Cancelled => {
-                    // Paid after the reservation expired.
-                    // TODO(prod): refund automatically through the provider.
-                    orders::set_payment_status(&state.db, order_id, PaymentStatus::Refunded)
-                        .await?;
-                    tracing::error!(%order_id, payment_id = payment.id, "payment for a cancelled order; refund needed");
-                }
-                _ => orders::set_payment_status(&state.db, order_id, PaymentStatus::Paid).await?,
-            }
+            payment_captured(state, &order, &payment.id, payment.amount).await?;
         }
         "payment.failed" if order.status == OrderStatus::Placed => {
             cancel(
@@ -656,6 +663,115 @@ pub async fn handle_razorpay_webhook(
         other => tracing::debug!(event = other, "Razorpay webhook ignored"),
     }
     Ok(())
+}
+
+/// A payment for `order` was captured (webhook or verified checkout callback).
+/// Idempotent per order. Confirms a waiting order; refunds one that was
+/// cancelled meanwhile (e.g. the reservation expired).
+async fn payment_captured(
+    state: &AppState,
+    order: &Order,
+    payment_id: &str,
+    amount_paise: i64,
+) -> AppResult<()> {
+    let order_id = order.id;
+    if amount_paise != order.total_paise {
+        tracing::error!(%order_id, amount_paise, "payment amount mismatch; not confirming");
+        return Err(AppError::Validation(
+            "payment amount doesn't match the order".into(),
+        ));
+    }
+    if !order_payments::record(&state.db, order_id, "razorpay", payment_id, amount_paise).await? {
+        let known = order_payments::find(&state.db, order_id).await?;
+        if known.as_ref().is_some_and(|p| p.payment_id != payment_id) {
+            tracing::error!(%order_id, payment_id, "second payment captured for one order; refund it manually");
+        }
+        return Ok(());
+    }
+    match order.status {
+        OrderStatus::Placed => confirm(state, order_id, None, true).await,
+        OrderStatus::Cancelled => {
+            orders::set_payment_status(&state.db, order_id, PaymentStatus::Refunded).await?;
+            let captured = order_payments::find(&state.db, order_id).await?;
+            refund_best_effort(state, order, captured).await;
+            Ok(())
+        }
+        _ => {
+            orders::set_payment_status(&state.db, order_id, PaymentStatus::Paid).await?;
+            Ok(())
+        }
+    }
+}
+
+/// Refunds a captured payment through the provider once. Failures are logged
+/// for follow-up rather than failing the cancellation that triggered them.
+async fn refund_best_effort(
+    state: &AppState,
+    order: &Order,
+    captured: Option<order_payments::CapturedPayment>,
+) {
+    let Some(payment) = captured.filter(|p| p.refund_id.is_none()) else {
+        return;
+    };
+    let Some(rp) = &state.payments.razorpay else {
+        tracing::error!(order_id = %order.id, "captured payment but Razorpay isn't configured; refund manually");
+        return;
+    };
+    let receipt = display_number(order.number);
+    match rp
+        .refund(&payment.payment_id, payment.amount_paise, &receipt)
+        .await
+    {
+        Ok(Some(refund_id)) => {
+            if let Err(error) = order_payments::set_refunded(&state.db, order.id, &refund_id).await
+            {
+                tracing::error!(%error, order_id = %order.id, refund_id, "refund issued but not recorded");
+            } else {
+                tracing::info!(order_id = %order.id, refund_id, "refund issued");
+            }
+        }
+        Ok(None) => {}
+        Err(error) => {
+            tracing::error!(%error, order_id = %order.id, payment_id = payment.payment_id, "refund failed; retry manually");
+        }
+    }
+}
+
+/// `POST /v1/customer/orders/{id}/payment`: the app hands over the checkout
+/// callback so the order confirms without waiting for the webhook.
+pub async fn verify_checkout_payment(
+    state: &AppState,
+    user: &AuthUser,
+    order_id: Uuid,
+    req: &PaymentVerifyRequest,
+) -> AppResult<OrderDetail> {
+    let order = orders::find(&state.db, order_id)
+        .await?
+        .filter(|o| o.user_id == user.user_id)
+        .ok_or(AppError::NotFound("order"))?;
+    let rp = state
+        .payments
+        .razorpay
+        .as_ref()
+        .ok_or(AppError::NotFound("payment provider"))?;
+    let signed = order.gateway_order_id.as_deref() == Some(req.razorpay_order_id.as_str())
+        && rp.verify_checkout(
+            &req.razorpay_order_id,
+            &req.razorpay_payment_id,
+            &req.razorpay_signature,
+        );
+    if !signed {
+        tracing::warn!(%order_id, "rejected checkout callback with a bad signature");
+        return Err(AppError::Validation(
+            "payment couldn't be verified; it will update once the bank confirms".into(),
+        ));
+    }
+    // The gateway order's amount was fixed at creation, so it is the total.
+    payment_captured(state, &order, &req.razorpay_payment_id, order.total_paise).await?;
+    let order = orders::find(&state.db, order_id)
+        .await?
+        .ok_or(AppError::NotFound("order"))?;
+    detail(state, order).await
 }
 
 // ---------- read models ----------

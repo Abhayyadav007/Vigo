@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, Text } from "react-native";
-import { colors } from "./theme";
+import { useColors } from "./ColorsContext";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost";
 
@@ -26,6 +26,7 @@ const label: Record<ButtonVariant, string> = {
 };
 
 export function Button({ title, onPress, variant = "primary", disabled, loading, size = "md", testID }: ButtonProps) {
+  const colors = useColors();
   const inactive = disabled || loading;
   return (
     <Pressable

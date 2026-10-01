@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { Text, TextInput, View, type TextInputProps } from "react-native";
-import { colors } from "./theme";
+import { useColors } from "./ColorsContext";
 
 export interface TextFieldProps extends Omit<TextInputProps, "className"> {
   label: string;
@@ -13,6 +13,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   { label, error, prefix, ...input },
   ref,
 ) {
+  const colors = useColors();
   return (
     <View className="gap-2">
       <Text className="text-sm font-medium text-ink">{label}</Text>
