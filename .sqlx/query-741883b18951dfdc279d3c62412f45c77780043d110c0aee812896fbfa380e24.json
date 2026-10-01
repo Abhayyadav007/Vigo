@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT EXISTS (\n            SELECT 1 FROM orders WHERE user_id = $1\n              AND status NOT IN ('DELIVERED', 'CANCELLED', 'PARTIALLY_FULFILLED')\n        ) OR EXISTS (\n            SELECT 1 FROM deliveries WHERE rider_id = $1 AND delivered_at IS NULL AND ended_at IS NULL\n        ) AS \"busy!\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "busy!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "741883b18951dfdc279d3c62412f45c77780043d110c0aee812896fbfa380e24"
+}

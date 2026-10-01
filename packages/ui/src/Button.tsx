@@ -20,7 +20,7 @@ const container: Record<ButtonVariant, string> = {
   ghost: "bg-transparent active:bg-surface",
 };
 const label: Record<ButtonVariant, string> = {
-  primary: "text-white",
+  primary: "text-background",
   secondary: "text-ink",
   ghost: "text-brand",
 };
@@ -37,7 +37,7 @@ export function Button({ title, onPress, variant = "primary", disabled, loading,
       className={`flex-row items-center justify-center rounded-md px-5 ${size === "lg" ? "h-16" : "h-12"} ${container[variant]} ${inactive ? "opacity-50" : ""}`}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? "#fff" : colors.brand} />
+        <ActivityIndicator color={variant === "primary" ? colors.background : colors.brand} />
       ) : (
         <Text className={`font-semibold ${size === "lg" ? "text-lg" : "text-base"} ${label[variant]}`}>{title}</Text>
       )}

@@ -7,7 +7,7 @@ import { useStore } from "../../lib/location";
 export default function Account() {
   const user = useCurrentUser();
   const store = useStore();
-  const { signOut } = useAuth();
+  const { signOut, deleteAccount } = useAuth();
 
   return (
     <Screen scroll>
@@ -24,6 +24,27 @@ export default function Account() {
       />
       <AddressList />
       <Button title="Sign out" variant="secondary" onPress={() => void signOut()} />
+      <Button
+        title="Delete account"
+        variant="ghost"
+        onPress={() =>
+          Alert.alert(
+            "Delete your account?",
+            "Your saved addresses and personal details are erased. Past orders are kept without your details for our records.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () =>
+                  void deleteAccount().catch((e: unknown) =>
+                    Alert.alert("Couldn't delete", e instanceof Error ? e.message : "Try again"),
+                  ),
+              },
+            ],
+          )
+        }
+      />
     </Screen>
   );
 }

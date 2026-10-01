@@ -5,13 +5,18 @@
     "scheme": "vigo-customer",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "com.vigo.customer",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.vigo.customer"
+      "package": "com.vigo.customer",
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
@@ -21,7 +26,14 @@
           "locationWhenInUsePermission": "Vigo uses your location to find the nearest store that can deliver to you."
         }
       ],
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
       "@react-native-firebase/auth",
       [
         "expo-build-properties",
@@ -32,6 +44,13 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "df75d111-a1e2-43d9-a5cd-0bcfb6d8963e"
+      }
+    },
+    "owner": "abhayyadav"
   }
 }

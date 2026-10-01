@@ -62,9 +62,9 @@ export default function DeliveryScreen() {
           </View>
           <Button title="Navigate to store" variant="secondary" size="lg" onPress={() => navigateTo(d.storeLocation.lat, d.storeLocation.lng)} />
           <View className="items-center gap-1 rounded-lg bg-ink p-5">
-            <Text className="text-sm text-white">COLLECT FROM SLOT</Text>
-            <Text className="text-4xl font-bold text-white">{d.stagingSlot ?? "Ask the picker"}</Text>
-            <Text className="text-base text-white">
+            <Text className="text-sm text-background">COLLECT FROM SLOT</Text>
+            <Text className="text-4xl font-bold text-background">{d.stagingSlot ?? "Ask the picker"}</Text>
+            <Text className="text-base text-background">
               {d.bagCount ?? "?"} bag(s) · {d.itemCount} items
             </Text>
           </View>

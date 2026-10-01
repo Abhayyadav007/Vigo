@@ -35,3 +35,12 @@ pub async fn me(State(state): State<AppState>, auth: AuthUser) -> AppResult<Json
         .ok_or(AppError::NotFound("user"))?;
     Ok(Json(user.into()))
 }
+
+/// `DELETE /v1/auth/me`: delete my account. The app then deletes the Firebase user.
+pub async fn delete_me(
+    State(state): State<AppState>,
+    auth: AuthUser,
+) -> AppResult<axum::http::StatusCode> {
+    auth_service::delete_account(&state, &auth).await?;
+    Ok(axum::http::StatusCode::NO_CONTENT)
+}

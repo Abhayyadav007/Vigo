@@ -37,8 +37,8 @@ export default function OrderScreen() {
       <ScrollView contentContainerClassName="gap-4 p-4 pb-12">
         {placed && o.status !== "CANCELLED" ? (
           <View className="rounded-lg bg-brand p-4">
-            <Text className="text-xl font-bold text-white">Order placed 🎉</Text>
-            <Text className="text-white">We're getting it ready.</Text>
+            <Text className="text-xl font-bold text-background">Order placed 🎉</Text>
+            <Text className="text-background">We're getting it ready.</Text>
           </View>
         ) : null}
 

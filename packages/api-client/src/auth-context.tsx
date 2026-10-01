@@ -12,6 +12,8 @@ export interface AuthAdapter {
   onAuthStateChanged: (listener: (user: { uid: string } | null) => void) => () => void;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
   signOut: () => Promise<void>;
+  /** Deletes the Firebase user (may fail if the login isn't recent). */
+  deleteUser: () => Promise<void>;
 }
 
 export type AuthState =
@@ -26,6 +28,8 @@ export interface AuthContextValue {
   refresh: () => Promise<void>;
   /** Current Firebase ID token (for WebSocket auth). */
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
+  /** Deletes the account (store requirement), then signs out. */
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -94,8 +98,20 @@ export function AuthProvider({ adapter, client, requiredRole, children }: AuthPr
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ state, signOut: () => adapter.signOut(), refresh: sync, getIdToken: adapter.getIdToken }),
-    [adapter, state, sync],
+    () => ({
+      state,
+      signOut: () => adapter.signOut(),
+      refresh: sync,
+      getIdToken: adapter.getIdToken,
+      deleteAccount: async () => {
+        await client.delete("/v1/auth/me");
+        // The backend data is already gone; a stale Firebase user only means the
+        // next sign-in with this number starts a fresh account.
+        await adapter.deleteUser().catch(() => undefined);
+        await adapter.signOut();
+      },
+    }),
+    [adapter, client, state, sync],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

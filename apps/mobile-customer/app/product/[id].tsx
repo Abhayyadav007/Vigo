@@ -39,7 +39,7 @@ function ProductDetail() {
       <Stack.Screen options={{ headerShown: true, title: "" }} />
       <ScrollView contentContainerClassName="gap-4 pb-8">
         {images.length > 0 ? (
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} className="bg-photo">
             {images.map((uri) => (
               <Image key={uri} source={{ uri }} style={{ width, height: width }} resizeMode="contain" />
             ))}

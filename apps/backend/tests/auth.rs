@@ -309,3 +309,59 @@ async fn sync_is_rate_limited_per_firebase_user(db: PgPool) {
     assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
     assert_eq!(error_code(&body), "RATE_LIMITED");
 }
+
+#[sqlx::test]
+async fn customers_can_delete_their_account(db: PgPool) {
+    let app = TestApp::new(db.clone());
+    let phone = random_phone();
+    let token = TokenBuilder::new().phone(&phone).sign();
+    let (_, me) = app
+        .request(Method::POST, "/v1/auth/sync", Some(&token), None)
+        .await;
+    app.request(
+        Method::POST,
+        "/v1/customer/addresses",
+        Some(&token),
+        Some(serde_json::json!({
+            "label": "Home", "line1": "Flat 1", "city": "Bengaluru", "pincode": "560038",
+            "location": { "lat": 12.97, "lng": 77.64 },
+        })),
+    )
+    .await;
+
+    let (status, _) = app
+        .request(Method::DELETE, "/v1/auth/me", Some(&token), None)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Personal data is gone; the same token no longer maps to an account.
+    let (phone_after, active, addresses): (Option<String>, bool, i64) = sqlx::query_as(
+        "SELECT phone, is_active, (SELECT count(*) FROM addresses WHERE user_id = u.id) FROM users u WHERE id = $1::uuid",
+    )
+    .bind(me["id"].as_str().unwrap())
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!((phone_after, active, addresses), (None, false, 0));
+    let (status, body) = app.get("/v1/auth/me", Some(&token)).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(error_code(&body), "USER_NOT_REGISTERED");
+
+    // Signing up again with the same number starts a fresh account.
+    let (status, again) = app
+        .request(Method::POST, "/v1/auth/sync", Some(&token), None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_ne!(again["id"], me["id"]);
+    assert_eq!(again["phone"], phone);
+}
+
+#[sqlx::test]
+async fn admins_cannot_delete_themselves(db: PgPool) {
+    let app = TestApp::new(db);
+    let (token, _) = admin(&app).await;
+    let (status, _) = app
+        .request(Method::DELETE, "/v1/auth/me", Some(&token), None)
+        .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+}

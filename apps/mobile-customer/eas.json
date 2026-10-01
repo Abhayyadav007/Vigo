@@ -1,0 +1,15 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "pnpm": "10.28.2",
+      "android": { "buildType": "apk" }
+    }
+  }
+}

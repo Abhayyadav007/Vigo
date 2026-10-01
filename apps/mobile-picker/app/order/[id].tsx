@@ -170,7 +170,7 @@ export default function PickScreen() {
           </View>
           {feedback ? (
             <View className={`rounded-md p-3 ${feedback.ok ? "bg-brand-light" : "bg-danger"}`}>
-              <Text className={`text-lg font-bold ${feedback.ok ? "text-brand-dark" : "text-white"}`}>{feedback.text}</Text>
+              <Text className={`text-lg font-bold ${feedback.ok ? "text-brand-dark" : "text-background"}`}>{feedback.text}</Text>
             </View>
           ) : null}
         </View>
@@ -235,8 +235,8 @@ function LineCard({
   return (
     <View className={`flex-row gap-4 rounded-lg border-2 p-4 ${border}`}>
       <View className="w-24 items-center justify-center rounded-md bg-ink py-3">
-        <Text className="text-xs text-white">BIN</Text>
-        <Text className="text-xl font-bold text-white">{line.binLocation ?? "—"}</Text>
+        <Text className="text-xs text-background">BIN</Text>
+        <Text className="text-xl font-bold text-background">{line.binLocation ?? "—"}</Text>
       </View>
       {imageUri ? <Image source={{ uri: imageUri }} className="h-20 w-20 rounded-md" resizeMode="contain" /> : null}
       <View className="flex-1 gap-1">

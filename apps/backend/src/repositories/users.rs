@@ -20,7 +20,7 @@ pub async fn upsert_from_firebase<'e>(
         VALUES ($1, $2)
         ON CONFLICT (firebase_uid) DO UPDATE
             SET phone = EXCLUDED.phone
-        RETURNING id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        RETURNING id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                   is_active, created_at, updated_at
         "#,
         firebase_uid,
@@ -43,7 +43,7 @@ pub async fn relink_firebase_uid<'e>(
         r#"
         UPDATE users SET firebase_uid = $2
         WHERE phone = $1
-        RETURNING id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        RETURNING id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                   is_active, created_at, updated_at
         "#,
         phone,
@@ -60,7 +60,7 @@ pub async fn find_by_firebase_uid<'e>(
     sqlx::query_as!(
         User,
         r#"
-        SELECT id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        SELECT id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                is_active, created_at, updated_at
         FROM users WHERE firebase_uid = $1
         "#,
@@ -77,7 +77,7 @@ pub async fn find_by_phone<'e>(
     sqlx::query_as!(
         User,
         r#"
-        SELECT id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        SELECT id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                is_active, created_at, updated_at
         FROM users WHERE phone = $1
         "#,
@@ -94,7 +94,7 @@ pub async fn find_by_id<'e>(
     sqlx::query_as!(
         User,
         r#"
-        SELECT id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        SELECT id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                is_active, created_at, updated_at
         FROM users WHERE id = $1
         "#,
@@ -119,11 +119,12 @@ pub async fn list<'e>(
     let phone_pattern = filter.phone.map(|p| format!("%{p}%"));
     let rows = sqlx::query!(
         r#"
-        SELECT id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        SELECT id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                is_active, created_at, updated_at,
                count(*) OVER () AS "total!"
         FROM users
-        WHERE ($1::text IS NULL OR phone LIKE $1)
+        WHERE deleted_at IS NULL
+          AND ($1::text IS NULL OR phone LIKE $1)
           AND ($2::user_role IS NULL OR role = $2)
         ORDER BY created_at DESC, id
         LIMIT $3 OFFSET $4
@@ -165,7 +166,7 @@ pub async fn update_role<'e>(
         r#"
         UPDATE users SET role = $2, store_id = $3
         WHERE id = $1
-        RETURNING id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        RETURNING id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                   is_active, created_at, updated_at
         "#,
         id,
@@ -186,7 +187,7 @@ pub async fn set_role_by_phone<'e>(
         r#"
         UPDATE users SET role = $2
         WHERE phone = $1
-        RETURNING id, firebase_uid, phone, name, role AS "role: Role", store_id,
+        RETURNING id, firebase_uid, phone AS "phone!", name, role AS "role: Role", store_id,
                   is_active, created_at, updated_at
         "#,
         phone,
@@ -194,4 +195,62 @@ pub async fn set_role_by_phone<'e>(
     )
     .fetch_optional(db)
     .await
+}
+
+/// True when the user has an order or delivery still in progress.
+pub async fn has_work_in_progress<'e>(
+    db: impl PgExecutor<'e>,
+    id: Uuid,
+) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"
+        SELECT EXISTS (
+            SELECT 1 FROM orders WHERE user_id = $1
+              AND status NOT IN ('DELIVERED', 'CANCELLED', 'PARTIALLY_FULFILLED')
+        ) OR EXISTS (
+            SELECT 1 FROM deliveries WHERE rider_id = $1 AND delivered_at IS NULL AND ended_at IS NULL
+        ) AS "busy!"
+        "#,
+        id,
+    )
+    .fetch_one(db)
+    .await
+}
+
+/// Erases a user's personal data. Orders stay (accounting) with their address
+/// reduced to city + PIN code and the pin blurred to ~1 km.
+pub async fn erase(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!("DELETE FROM addresses WHERE user_id = $1", id)
+        .execute(&mut *conn)
+        .await?;
+    sqlx::query!("DELETE FROM carts WHERE user_id = $1", id)
+        .execute(&mut *conn)
+        .await?;
+    sqlx::query!(
+        r#"
+        UPDATE orders SET
+            address = jsonb_build_object(
+                'label', 'Deleted', 'line1', '—', 'line2', NULL, 'landmark', NULL,
+                'city', address->>'city', 'pincode', address->>'pincode',
+                'lat', round((address->>'lat')::numeric, 2), 'lng', round((address->>'lng')::numeric, 2)),
+            delivery_location = ST_SetSRID(ST_MakePoint(
+                round(ST_X(delivery_location::geometry)::numeric, 2)::float8,
+                round(ST_Y(delivery_location::geometry)::numeric, 2)::float8), 4326)::geography
+        WHERE user_id = $1
+        "#,
+        id,
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        r#"
+        UPDATE users SET phone = NULL, name = NULL, store_id = NULL, is_active = FALSE,
+            firebase_uid = 'deleted:' || id::text, deleted_at = now()
+        WHERE id = $1
+        "#,
+        id,
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
 }

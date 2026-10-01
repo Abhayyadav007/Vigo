@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE orders SET\n            address = jsonb_build_object(\n                'label', 'Deleted', 'line1', '—', 'line2', NULL, 'landmark', NULL,\n                'city', address->>'city', 'pincode', address->>'pincode',\n                'lat', round((address->>'lat')::numeric, 2), 'lng', round((address->>'lng')::numeric, 2)),\n            delivery_location = ST_SetSRID(ST_MakePoint(\n                round(ST_X(delivery_location::geometry)::numeric, 2)::float8,\n                round(ST_Y(delivery_location::geometry)::numeric, 2)::float8), 4326)::geography\n        WHERE user_id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c03f0abcdc12f87501991c025d83d36bf05db4dafe91f965319c0efaa04dc5b2"
+}

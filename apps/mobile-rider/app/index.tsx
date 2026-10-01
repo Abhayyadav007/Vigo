@@ -83,8 +83,8 @@ export default function Home() {
         onPress={() => void toggle()}
         className={`items-center gap-2 rounded-lg p-8 ${online ? "bg-brand" : "bg-surface"}`}
       >
-        <Text className={`text-4xl font-bold ${online ? "text-white" : "text-ink"}`}>{online ? "ONLINE" : "OFFLINE"}</Text>
-        <Text className={online ? "text-white" : "text-muted"}>
+        <Text className={`text-4xl font-bold ${online ? "text-background" : "text-ink"}`}>{online ? "ONLINE" : "OFFLINE"}</Text>
+        <Text className={online ? "text-background" : "text-muted"}>
           {onDelivery ? "On a delivery" : online ? "Waiting for orders nearby — tap to go offline" : "Tap to start taking orders"}
         </Text>
       </Pressable>

@@ -20,7 +20,7 @@ const tone = (s: OrderStatus) =>
 export function StatusChip({ status }: { status: OrderStatus }) {
   return (
     <View className={`rounded-pill px-3 py-1 ${tone(status)}`}>
-      <Text className="text-xs font-bold text-white">{STATUS_LABEL[status]}</Text>
+      <Text className="text-xs font-bold text-background">{STATUS_LABEL[status]}</Text>
     </View>
   );
 }

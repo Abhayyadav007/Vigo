@@ -238,7 +238,7 @@ pub async fn info<'e>(
         SELECT o.id AS order_id, o.number, o.store_id, s.name AS store_name, s.address AS store_address,
                ST_Y(s.location::geometry) AS "store_lat!", ST_X(s.location::geometry) AS "store_lng!",
                ST_Y(o.delivery_location::geometry) AS "drop_lat!", ST_X(o.delivery_location::geometry) AS "drop_lng!",
-               o.address AS "address: Json<AddressSnapshot>", u.phone AS customer_phone,
+               o.address AS "address: Json<AddressSnapshot>", u.phone AS "customer_phone!",
                (SELECT sum(coalesce(picked_quantity, quantity)) FROM order_items i WHERE i.order_id = o.id)::int AS "item_count!",
                o.bag_count, o.staging_slot,
                o.payment_method AS "payment_method: PaymentMethod",
@@ -331,7 +331,7 @@ pub async fn contact<'e>(
     sqlx::query_as!(
         RiderContact,
         r#"
-        SELECT u.name, u.phone, coalesce(p.vehicle_type, 'SCOOTER') AS "vehicle_type!: VehicleType",
+        SELECT u.name, u.phone AS "phone!", coalesce(p.vehicle_type, 'SCOOTER') AS "vehicle_type!: VehicleType",
                p.vehicle_number
         FROM users u LEFT JOIN rider_profiles p ON p.user_id = u.id
         WHERE u.id = $1

@@ -59,10 +59,10 @@ export function CartBar() {
         onPress={() => router.navigate("/cart")}
         className="flex-row items-center justify-between rounded-lg bg-brand px-4 py-3 shadow-lg active:bg-brand-dark"
       >
-        <Text className="font-semibold text-white">
+        <Text className="font-semibold text-background">
           {count} {count === 1 ? "item" : "items"} · {formatPaise(cart.data?.bill.itemTotalPaise ?? 0)}
         </Text>
-        <Text className="font-bold text-white">View cart ›</Text>
+        <Text className="font-bold text-background">View cart ›</Text>
       </Pressable>
     </View>
   );

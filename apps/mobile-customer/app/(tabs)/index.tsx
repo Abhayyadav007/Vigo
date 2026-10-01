@@ -1,5 +1,6 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { resolveMediaUrl, useApiBaseUrl, useCatalogCategories, useCatalogProducts } from "@vigo/api-client";
-import { CategoryTile, EmptyState } from "@vigo/ui";
+import { CategoryTile, colors, EmptyState } from "@vigo/ui";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,17 +18,19 @@ export default function Home() {
 
   const header = (
     <View className="gap-5 pb-2" style={{ paddingTop: insets.top + 12 }}>
-      <View className="gap-1">
-        <Text className="text-2xl font-bold text-ink" testID="eta">
-          Delivery in {store.etaMinutes} minutes
+      <View>
+        <Text className="text-xs font-bold uppercase tracking-widest text-ink">Vigo in</Text>
+        <Text className="text-4xl font-extrabold text-accent" testID="eta">
+          {store.etaMinutes} minutes
         </Text>
-        <Text className="text-sm text-muted">from {store.name}</Text>
+        <Text className="text-sm text-muted">Delivering from {store.name}</Text>
       </View>
       <Pressable
         accessibilityRole="search"
         onPress={() => router.push("/search")}
-        className="h-12 justify-center rounded-md border border-line bg-surface px-4"
+        className="h-12 flex-row items-center gap-3 rounded-lg border border-line bg-surface px-4"
       >
+        <Ionicons name="search" size={20} color={colors.ink} />
         <Text className="text-base text-muted">Search for atta, dal, milk…</Text>
       </Pressable>
       {categories.data && categories.data.length > 0 ? (

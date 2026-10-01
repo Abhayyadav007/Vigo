@@ -5,13 +5,18 @@
     "scheme": "vigo-picker",
     "version": "0.1.0",
     "orientation": "default",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "com.vigo.picker",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.vigo.picker"
+      "package": "com.vigo.picker",
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
@@ -22,7 +27,14 @@
           "recordAudioAndroid": false
         }
       ],
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
       "@react-native-firebase/auth",
       [
         "expo-build-properties",

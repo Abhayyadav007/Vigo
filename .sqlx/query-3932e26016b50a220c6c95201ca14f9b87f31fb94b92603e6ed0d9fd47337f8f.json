@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT o.id AS order_id, o.number, o.store_id, s.name AS store_name, s.address AS store_address,\n               ST_Y(s.location::geometry) AS \"store_lat!\", ST_X(s.location::geometry) AS \"store_lng!\",\n               ST_Y(o.delivery_location::geometry) AS \"drop_lat!\", ST_X(o.delivery_location::geometry) AS \"drop_lng!\",\n               o.address AS \"address: Json<AddressSnapshot>\", u.phone AS customer_phone,\n               (SELECT sum(coalesce(picked_quantity, quantity)) FROM order_items i WHERE i.order_id = o.id)::int AS \"item_count!\",\n               o.bag_count, o.staging_slot,\n               o.payment_method AS \"payment_method: PaymentMethod\",\n               o.payment_status AS \"payment_status: PaymentStatus\",\n               o.total_paise, o.status AS \"status: OrderStatus\"\n        FROM orders o\n        JOIN dark_stores s ON s.id = o.store_id\n        JOIN users u ON u.id = o.user_id\n        WHERE o.id = $1\n        ",
+  "query": "\n        SELECT o.id AS order_id, o.number, o.store_id, s.name AS store_name, s.address AS store_address,\n               ST_Y(s.location::geometry) AS \"store_lat!\", ST_X(s.location::geometry) AS \"store_lng!\",\n               ST_Y(o.delivery_location::geometry) AS \"drop_lat!\", ST_X(o.delivery_location::geometry) AS \"drop_lng!\",\n               o.address AS \"address: Json<AddressSnapshot>\", u.phone AS \"customer_phone!\",\n               (SELECT sum(coalesce(picked_quantity, quantity)) FROM order_items i WHERE i.order_id = o.id)::int AS \"item_count!\",\n               o.bag_count, o.staging_slot,\n               o.payment_method AS \"payment_method: PaymentMethod\",\n               o.payment_status AS \"payment_status: PaymentStatus\",\n               o.total_paise, o.status AS \"status: OrderStatus\"\n        FROM orders o\n        JOIN dark_stores s ON s.id = o.store_id\n        JOIN users u ON u.id = o.user_id\n        WHERE o.id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -55,7 +55,7 @@
       },
       {
         "ordinal": 10,
-        "name": "customer_phone",
+        "name": "customer_phone!",
         "type_info": "Text"
       },
       {
@@ -150,7 +150,7 @@
       null,
       null,
       false,
-      false,
+      true,
       null,
       true,
       true,
@@ -160,5 +160,5 @@
       false
     ]
   },
-  "hash": "27a378df39d19f71d0d23253b167f940baa6179d51e18b358e4099996ec0f222"
+  "hash": "3932e26016b50a220c6c95201ca14f9b87f31fb94b92603e6ed0d9fd47337f8f"
 }

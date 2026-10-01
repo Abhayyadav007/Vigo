@@ -30,7 +30,7 @@ export function OfferSheet({ offer }: { offer: DeliveryOffer }) {
           <View className="flex-row items-center justify-between">
             <Text className="text-2xl font-bold text-ink">New delivery</Text>
             <View className={`rounded-pill px-4 py-1 ${secondsLeft <= 10 ? "bg-danger" : "bg-brand"}`}>
-              <Text className="text-lg font-bold text-white" testID="offer-countdown">
+              <Text className="text-lg font-bold text-background" testID="offer-countdown">
                 {secondsLeft}s
               </Text>
             </View>

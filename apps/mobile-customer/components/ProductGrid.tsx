@@ -4,6 +4,7 @@ import { colors, ProductCard } from "@vigo/ui";
 import { router } from "expo-router";
 import type { ReactElement } from "react";
 import { ActivityIndicator, FlatList, View } from "react-native";
+import { useStore } from "../lib/location";
 import { AddToCart } from "./CartControls";
 
 export interface ProductGridProps {
@@ -16,6 +17,7 @@ export interface ProductGridProps {
 
 export function ProductGrid({ products, onEndReached, loadingMore, header, empty }: ProductGridProps) {
   const base = useApiBaseUrl();
+  const eta = `${useStore().etaMinutes} MINS`;
   return (
     <FlatList
       data={products}
@@ -43,6 +45,7 @@ export function ProductGrid({ products, onEndReached, loadingMore, header, empty
               mrp={formatPaise(p.mrpPaise)}
               badge={off > 0 ? `${off}% OFF` : undefined}
               inStock={p.inStock}
+              eta={eta}
               action={<AddToCart product={p} />}
               onPress={() => router.push({ pathname: "/product/[id]", params: { id: p.id } })}
             />

@@ -80,7 +80,7 @@ export default function Cart() {
         <View className="gap-3 rounded-lg border border-line p-3">
           {data.items.map((line) => (
             <View key={line.productId} className={`flex-row items-center gap-3 ${line.available ? "" : "opacity-50"}`}>
-              <View className="h-14 w-14 items-center justify-center overflow-hidden rounded-md bg-surface">
+              <View className="h-14 w-14 items-center justify-center overflow-hidden rounded-md bg-photo">
                 {line.imageUrl ? (
                   <Image source={{ uri: resolveMediaUrl(line.imageUrl, base) }} className="h-full w-full" resizeMode="contain" />
                 ) : (

@@ -20,7 +20,7 @@ export function QuantityStepper({ quantity, max, onChange, disabled, size = "sm"
         accessibilityLabel="Add to cart"
         disabled={disabled || max === 0}
         onPress={() => onChange(1)}
-        className={`${h} items-center justify-center rounded-md border border-brand bg-brand-light px-4 active:opacity-70 ${disabled || max === 0 ? "opacity-40" : ""}`}
+        className={`${h} min-w-16 items-center justify-center rounded-md border border-brand bg-brand-light px-4 active:opacity-70 ${disabled || max === 0 ? "opacity-40" : ""}`}
       >
         <Text className="font-bold text-brand">ADD</Text>
       </Pressable>
@@ -35,9 +35,9 @@ export function QuantityStepper({ quantity, max, onChange, disabled, size = "sm"
         onPress={() => onChange(quantity - 1)}
         className="h-full w-9 items-center justify-center active:opacity-70"
       >
-        <Text className="text-lg font-bold text-white">−</Text>
+        <Text className="text-lg font-bold text-background">−</Text>
       </Pressable>
-      <Text className="min-w-6 text-center font-bold text-white" accessibilityLabel={`${quantity} in cart`}>
+      <Text className="min-w-6 text-center font-bold text-background" accessibilityLabel={`${quantity} in cart`}>
         {quantity}
       </Text>
       <Pressable
@@ -47,7 +47,7 @@ export function QuantityStepper({ quantity, max, onChange, disabled, size = "sm"
         onPress={() => onChange(quantity + 1)}
         className={`h-full w-9 items-center justify-center active:opacity-70 ${quantity >= max ? "opacity-40" : ""}`}
       >
-        <Text className="text-lg font-bold text-white">+</Text>
+        <Text className="text-lg font-bold text-background">+</Text>
       </Pressable>
     </View>
   );

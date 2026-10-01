@@ -114,6 +114,27 @@ fn is_unique_violation(e: &sqlx::Error, constraint: &str) -> bool {
     matches!(e, sqlx::Error::Database(db) if db.is_unique_violation() && db.constraint() == Some(constraint))
 }
 
+/// Deletes the caller's account (store requirement): personal data is erased,
+/// past orders are kept anonymised. Refused while an order/delivery is live,
+/// and for admins (another admin removes them, so the last one can't lock out).
+pub async fn delete_account(state: &AppState, user: &crate::extractors::AuthUser) -> AppResult<()> {
+    if user.role == crate::auth::Role::Admin {
+        return Err(AppError::Conflict(
+            "admin accounts are removed by another admin".into(),
+        ));
+    }
+    if users::has_work_in_progress(&state.db, user.user_id).await? {
+        return Err(AppError::Conflict(
+            "you have an order or delivery in progress; try again once it's done".into(),
+        ));
+    }
+    let mut tx = state.db.begin().await?;
+    users::erase(&mut tx, user.user_id).await?;
+    tx.commit().await?;
+    invalidate_best_effort(state, &user.firebase_uid).await;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::is_indian_mobile;

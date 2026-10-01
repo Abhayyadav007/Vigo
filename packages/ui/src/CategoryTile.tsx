@@ -9,7 +9,7 @@ export interface CategoryTileProps {
 export function CategoryTile({ name, imageUri, onPress }: CategoryTileProps) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} className="flex-1 items-center gap-2 active:opacity-70">
-      <View className="aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-brand-light">
+      <View className="aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-surface">
         {imageUri ? (
           <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
         ) : (

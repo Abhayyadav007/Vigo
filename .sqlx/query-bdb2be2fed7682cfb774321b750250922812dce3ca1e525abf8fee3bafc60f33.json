@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE users SET phone = NULL, name = NULL, store_id = NULL, is_active = FALSE,\n            firebase_uid = 'deleted:' || id::text, deleted_at = now()\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bdb2be2fed7682cfb774321b750250922812dce3ca1e525abf8fee3bafc60f33"
+}

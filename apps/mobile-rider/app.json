@@ -5,7 +5,7 @@
     "scheme": "vigo-rider",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "com.vigo.rider",
       "supportsTablet": true,
@@ -13,10 +13,15 @@
         "UIBackgroundModes": [
           "location"
         ]
+      },
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.vigo.rider"
+      "package": "com.vigo.rider",
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
@@ -30,7 +35,14 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
       "@react-native-firebase/auth",
       [
         "expo-build-properties",

@@ -2,6 +2,7 @@
 import { initializeApp, type FirebaseOptions } from "firebase/app";
 import {
   connectAuthEmulator,
+  deleteUser,
   getAuth,
   onAuthStateChanged,
   RecaptchaVerifier,
@@ -30,6 +31,9 @@ export function createWebFirebaseAuth(config: FirebaseOptions, options: { emulat
       onAuthStateChanged: (listener) => onAuthStateChanged(auth, (user) => listener(user ? { uid: user.uid } : null)),
       getIdToken: async (forceRefresh = false) => (auth.currentUser ? auth.currentUser.getIdToken(forceRefresh) : null),
       signOut: () => signOut(auth),
+      deleteUser: async () => {
+        if (auth.currentUser) await deleteUser(auth.currentUser);
+      },
     },
     async sendOtp(phoneE164, recaptchaContainer) {
       verifier?.clear();

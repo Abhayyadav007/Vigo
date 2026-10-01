@@ -2,8 +2,8 @@ import "../global.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider, AuthProvider, useAuth } from "@vigo/api-client";
-import { colors } from "@vigo/ui";
-import { Stack } from "expo-router";
+import { colors, navColors } from "@vigo/ui";
+import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -11,14 +11,18 @@ import { apiClient, firebaseAuth } from "../lib/api";
 // Registers the background location task before anything else runs.
 import "../lib/tracking";
 
+const navTheme = { ...DarkTheme, colors: { ...DarkTheme.colors, ...navColors } };
+
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
   return (
     <ApiClientProvider client={apiClient}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider adapter={firebaseAuth.adapter} client={apiClient} requiredRole="RIDER">
-          <StatusBar style="dark" />
-          <RootStack />
+          <StatusBar style="light" />
+          <ThemeProvider value={navTheme}>
+            <RootStack />
+          </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ApiClientProvider>

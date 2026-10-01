@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, firebase_uid, phone, name, role AS \"role: Role\", store_id,\n               is_active, created_at, updated_at\n        FROM users WHERE id = $1\n        ",
+  "query": "\n        UPDATE users SET role = $2, store_id = $3\n        WHERE id = $1\n        RETURNING id, firebase_uid, phone AS \"phone!\", name, role AS \"role: Role\", store_id,\n                  is_active, created_at, updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -15,7 +15,7 @@
       },
       {
         "ordinal": 2,
-        "name": "phone",
+        "name": "phone!",
         "type_info": "Text"
       },
       {
@@ -63,13 +63,27 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "user_role",
+            "kind": {
+              "Enum": [
+                "CUSTOMER",
+                "PICKER",
+                "RIDER",
+                "ADMIN"
+              ]
+            }
+          }
+        },
         "Uuid"
       ]
     },
     "nullable": [
       false,
       false,
-      false,
+      true,
       true,
       false,
       true,
@@ -78,5 +92,5 @@
       false
     ]
   },
-  "hash": "db60b1fce294025954067f070e4352dcd18c983958d9ab81504692c8be41082a"
+  "hash": "3b7517551a9b26887fa1b55cde6319ee402c1b59f32453e793dec0f5285a4d95"
 }
