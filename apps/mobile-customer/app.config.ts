@@ -2,8 +2,12 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 
 // Static config lives in app.json; this adds the Firebase native config files,
 // which are per-environment and gitignored (see firebase/README.md).
+const googleMapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY ?? "";
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...(config as ExpoConfig),
+  // Lets screens skip Google Maps on Android builds made without a key (it would crash).
+  extra: { ...config.extra, androidMapsEnabled: googleMapsKey !== "" },
   ios: {
     ...config.ios,
     googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST ?? "./firebase/GoogleService-Info.plist",
@@ -12,6 +16,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...config.android,
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./firebase/google-services.json",
     // Android map tiles (react-native-maps); iOS uses Apple Maps with no key.
-    config: { googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY ?? "" } },
+    config: { googleMaps: { apiKey: googleMapsKey } },
   },
 });

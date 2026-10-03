@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { useDelivery } from "../../lib/location";
+import { mapsEnabled } from "../../lib/maps";
 
 const LABELS = ["Home", "Work", "Other"] as const;
 
@@ -48,7 +49,7 @@ export default function NewAddress() {
   return (
     <Screen scroll>
       <Stack.Screen options={{ headerShown: true, title: "Add address" }} />
-      {coords ? (
+      {coords && mapsEnabled ? (
         <MapView
           style={{ height: 200, borderRadius: 12 }}
           initialRegion={{ latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.005, longitudeDelta: 0.005 }}
@@ -56,12 +57,18 @@ export default function NewAddress() {
           <Marker
             draggable
             coordinate={{ latitude: coords.lat, longitude: coords.lng }}
-            onDragEnd={(e) => setPin({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })}
+            onDragEnd={(e) =>
+              setPin({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })
+            }
           />
         </MapView>
       ) : null}
       <Text className="text-sm text-muted">
-        {coords ? "Drag the pin to your door." : "Waiting for your location…"}
+        {!coords
+          ? "Waiting for your location…"
+          : mapsEnabled
+            ? "Drag the pin to your door."
+            : "We'll pin this address at your current location, so add it while you're there."}
       </Text>
       <View className="flex-row gap-2">
         {LABELS.map((l) => (
@@ -78,7 +85,14 @@ export default function NewAddress() {
       <TextField label="Building, street, area (optional)" value={line2} onChangeText={setLine2} />
       <TextField label="Landmark (optional)" value={landmark} onChangeText={setLandmark} />
       <TextField label="City" value={city} onChangeText={setCity} />
-      <TextField label="PIN code" value={pincode} onChangeText={setPincode} keyboardType="number-pad" maxLength={6} error={error} />
+      <TextField
+        label="PIN code"
+        value={pincode}
+        onChangeText={setPincode}
+        keyboardType="number-pad"
+        maxLength={6}
+        error={error}
+      />
       <Button title="Save address" onPress={submit} loading={save.isPending} />
     </Screen>
   );
